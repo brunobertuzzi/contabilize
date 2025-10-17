@@ -1,0 +1,28 @@
+# Framework web e extensões
+Flask==3.1.1
+flask-cors==6.0.1
+Werkzeug==3.0.1
+
+# Interface gráfica
+pywebview==5.4
+
+# Banco de dados
+SQLAlchemy==2.0.41
+alembic==1.13.1
+
+# Segurança
+passlib[bcrypt]==1.7.4
+python-dotenv==1.1.1
+
+# Requisições HTTP
+requests==2.32.4
+
+# Testes
+pytest==8.0.2
+pytest-cov==4.1.0
+selenium==4.36.0
+webdriver-manager==4.0.2
+
+# Utilitários
+python-dateutil==2.8.2
+pytz==2024.1
