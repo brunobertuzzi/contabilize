@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,7 +15,8 @@
             --primary-color: #913453;
             --primary-dark: #5e1b31;
             --primary-light: #a13d4d;
-            --secondary-color: #495057; /* Darker grey for unselected tabs */
+            --secondary-color: #495057;
+            /* Darker grey for unselected tabs */
             --background-light: #f8f9fa;
             --background-dark: #e9ecef;
             --sidebar-bg: #212529;
@@ -45,10 +47,11 @@
             width: 80px;
         }
 
-        .sidebar.collapsed .nav-link-text, .sidebar.collapsed .navbar-brand .brand-text {
+        .sidebar.collapsed .nav-link-text,
+        .sidebar.collapsed .navbar-brand .brand-text {
             display: none;
         }
-        
+
         .sidebar .navbar-brand {
             color: var(--sidebar-text) !important;
             padding: 1.5rem 1.25rem;
@@ -77,11 +80,12 @@
             font-weight: 400;
         }
 
-        .sidebar .nav-link:hover, .sidebar .nav-link.active {
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
             background-color: var(--sidebar-hover) !important;
             color: var(--text-light) !important;
         }
-        
+
         .sidebar .nav-link.active {
             background-color: var(--sidebar-hover) !important;
             color: var(--text-light) !important;
@@ -143,7 +147,11 @@
             border-color: var(--primary-color) !important;
         }
 
-        .btn-check:checked+.btn-outline-primary, .btn-check:active+.btn-outline-primary, .btn-outline-primary:active, .btn-outline-primary.active, .btn-outline-primary.dropdown-toggle.show {
+        .btn-check:checked+.btn-outline-primary,
+        .btn-check:active+.btn-outline-primary,
+        .btn-outline-primary:active,
+        .btn-outline-primary.active,
+        .btn-outline-primary.dropdown-toggle.show {
             color: #fff;
             background-color: var(--primary-color) !important;
             border-color: var(--primary-color) !important;
@@ -263,8 +271,13 @@
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         .loading-text {
@@ -279,6 +292,7 @@
         }
     </style>
 </head>
+
 <body>
     <!-- Overlay de carregamento -->
     <div id="competenciaLoadingOverlay" class="loading-overlay">
@@ -308,7 +322,8 @@
                     <h4 class="card-title mb-4"><i class="bi bi-upload me-2"></i>Importar Arquivo SPED</h4>
                     <form id="formSped" method="POST" enctype="multipart/form-data">
                         <div class="input-group">
-                            <input type="file" class="form-control" id="arquivo_sped" name="arquivo_sped" accept=".txt" required>
+                            <input type="file" class="form-control" id="arquivo_sped" name="arquivo_sped" accept=".txt"
+                                required>
                             <button type="button" id="submitSped" class="btn btn-primary">
                                 <i class="bi bi-upload me-2"></i>Importar
                             </button>
@@ -319,16 +334,25 @@
 
             <ul class="nav nav-tabs mb-0" id="spedTabs" role="tablist">
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="produtos-tab" data-bs-toggle="tab" data-bs-target="#produtos" type="button" role="tab" aria-controls="produtos" aria-selected="true"><i class="bi bi-box-seam me-2"></i>Produtos</button>
+                    <button class="nav-link active" id="produtos-tab" data-bs-toggle="tab" data-bs-target="#produtos"
+                        type="button" role="tab" aria-controls="produtos" aria-selected="true"><i
+                            class="bi bi-box-seam me-2"></i>Produtos</button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="vendas-tab" data-bs-toggle="tab" data-bs-target="#vendas" type="button" role="tab" aria-controls="vendas" aria-selected="false"><i class="bi bi-cart me-2"></i>Vendas</button>
+                    <button class="nav-link" id="vendas-tab" data-bs-toggle="tab" data-bs-target="#vendas" type="button"
+                        role="tab" aria-controls="vendas" aria-selected="false"><i
+                            class="bi bi-cart me-2"></i>Vendas</button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="relatorio-acumulador-tab" data-bs-toggle="tab" data-bs-target="#relatorio-acumulador" type="button" role="tab" aria-controls="relatorio-acumulador" aria-selected="false"><i class="bi bi-calculator me-2"></i>Relatório por Acumulador</button>
+                    <button class="nav-link" id="relatorio-acumulador-tab" data-bs-toggle="tab"
+                        data-bs-target="#relatorio-acumulador" type="button" role="tab"
+                        aria-controls="relatorio-acumulador" aria-selected="false"><i
+                            class="bi bi-calculator me-2"></i>Relatório por Acumulador</button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="relatorio-cfop-tab" data-bs-toggle="tab" data-bs-target="#relatorio-cfop" type="button" role="tab" aria-controls="relatorio-cfop" aria-selected="false"><i class="bi bi-bar-chart-line me-2"></i>Relatório por CFOP</button>
+                    <button class="nav-link" id="relatorio-cfop-tab" data-bs-toggle="tab"
+                        data-bs-target="#relatorio-cfop" type="button" role="tab" aria-controls="relatorio-cfop"
+                        aria-selected="false"><i class="bi bi-bar-chart-line me-2"></i>Relatório por CFOP</button>
                 </li>
 
             </ul>
@@ -340,20 +364,39 @@
                         <div class="card-body p-3">
                             <div class="mb-4">
                                 <div class="d-flex justify-content-between align-items-center">
-                                    <h4 class="card-title mb-0"><i class="bi bi-list-ul me-2"></i>Produtos Cadastrados</h4>
+                                    <h4 class="card-title mb-0"><i class="bi bi-list-ul me-2"></i>Produtos Cadastrados
+                                    </h4>
                                 </div>
                                 <div class="d-flex align-items-center gap-2 mt-3 flex-wrap">
                                     <div class="btn-group flex-shrink-0" role="group">
-                                        <input type="radio" class="btn-check" name="acumuladorFilter" id="todos" value="todos" checked>
+                                        <input type="radio" class="btn-check" name="acumuladorFilter" id="todos"
+                                            value="todos" checked>
                                         <label class="btn btn-outline-primary" for="todos">Todos</label>
-                                        <input type="radio" class="btn-check" name="acumuladorFilter" id="cadastrados" value="cadastrados">
+                                        <input type="radio" class="btn-check" name="acumuladorFilter" id="cadastrados"
+                                            value="cadastrados">
                                         <label class="btn btn-outline-primary" for="cadastrados">Com Acumulador</label>
-                                        <input type="radio" class="btn-check" name="acumuladorFilter" id="naoCadastrados" value="naoCadastrados">
-                                        <label class="btn btn-outline-primary" for="naoCadastrados">Sem Acumulador</label>
+                                        <input type="radio" class="btn-check" name="acumuladorFilter"
+                                            id="naoCadastrados" value="naoCadastrados">
+                                        <label class="btn btn-outline-primary" for="naoCadastrados">Sem
+                                            Acumulador</label>
                                     </div>
-                                    <button type="button" class="btn btn-secondary flex-shrink-0" data-bs-toggle="modal" data-bs-target="#acumuladoresModal"><i class="bi bi-gear me-2"></i>Acumuladores</button>
-                                    <button type="button" class="btn btn-secondary flex-shrink-0" data-bs-toggle="modal" data-bs-target="#cfopsModal"><i class="bi bi-gear me-2"></i>CFOPs</button>
-                                    <input type="text" id="searchProdutos" class="form-control w-auto flex-grow-1 ms-lg-2 mt-2 mt-lg-0" style="min-width:150px;" placeholder="Pesquisar produtos...">
+                                    <button type="button" class="btn btn-secondary flex-shrink-0" data-bs-toggle="modal"
+                                        data-bs-target="#acumuladoresModal"><i
+                                            class="bi bi-gear me-2"></i>Acumuladores</button>
+                                    <button type="button" class="btn btn-secondary flex-shrink-0" data-bs-toggle="modal"
+                                        data-bs-target="#cfopsModal"><i class="bi bi-gear me-2"></i>CFOPs</button>
+                                    <button type="button" class="btn btn-success flex-shrink-0" id="btnClassificarAuto"
+                                        title="Classificar produtos automaticamente por NCM e nome">
+                                        <i class="bi bi-magic me-2"></i>Classificar Automático
+                                    </button>
+                                    <button type="button" class="btn btn-warning flex-shrink-0"
+                                        id="btnAnalisarInconsistencias"
+                                        title="Analisar produtos similares com acumuladores diferentes">
+                                        <i class="bi bi-exclamation-triangle me-2"></i>Inconsistências
+                                    </button>
+                                    <input type="text" id="searchProdutos"
+                                        class="form-control w-auto flex-grow-1 ms-lg-2 mt-2 mt-lg-0"
+                                        style="min-width:150px;" placeholder="Pesquisar produtos...">
                                 </div>
                             </div>
 
@@ -362,14 +405,17 @@
                                 <div class="d-flex flex-wrap align-items-center gap-3">
                                     <span id="selectedCount" class="fw-bold">0 produtos selecionados</span>
                                     <div class="d-flex align-items-center gap-2 flex-grow-1">
-                                        <label for="bulkAcumuladorSelect" class="form-label mb-0 flex-shrink-0">Aplicar Acumulador:</label>
+                                        <label for="bulkAcumuladorSelect" class="form-label mb-0 flex-shrink-0">Aplicar
+                                            Acumulador:</label>
                                         <select class="form-select form-select-sm" id="bulkAcumuladorSelect">
                                             <option value="">Selecione...</option>
                                             {% for acumulador in acumuladores %}
-                                            <option value="{{ acumulador.codigo }}">{{ acumulador.codigo }} - {{ acumulador.descricao }}</option>
+                                            <option value="{{ acumulador.codigo }}">{{ acumulador.codigo }} - {{
+                                                acumulador.descricao }}</option>
                                             {% endfor %}
                                         </select>
-                                        <button id="applyBulkAction" class="btn btn-primary btn-sm flex-shrink-0">Aplicar</button>
+                                        <button id="applyBulkAction"
+                                            class="btn btn-primary btn-sm flex-shrink-0">Aplicar</button>
                                     </div>
                                 </div>
                             </div>
@@ -378,7 +424,8 @@
                                 <table class="table table-striped table-hover align-middle" id="produtosTable">
                                     <thead class="table-dark">
                                         <tr>
-                                            <th class="text-center" style="width: 1%;"><input class="form-check-input" type="checkbox" id="selectAllProducts"></th>
+                                            <th class="text-center" style="width: 1%;"><input class="form-check-input"
+                                                    type="checkbox" id="selectAllProducts"></th>
                                             <th>Código</th>
                                             <th>Descrição</th>
                                             <th>Un.</th>
@@ -394,10 +441,13 @@
                                             <td>{{ produto.unidade }}</td>
                                             <td>{{ produto.ncm }}</td>
                                             <td>
-                                                <select class="form-select form-select-sm acumulador-select" data-codigo="{{ produto.codigo }}">
+                                                <select class="form-select form-select-sm acumulador-select"
+                                                    data-codigo="{{ produto.codigo }}">
                                                     <option value="">Selecione...</option>
                                                     {% for acumulador in acumuladores %}
-                                                    <option value="{{ acumulador.codigo }}" {% if produto.acumulador == acumulador.codigo %}selected{% endif %}>{{ acumulador.codigo }} - {{ acumulador.descricao }}</option>
+                                                    <option value="{{ acumulador.codigo }}" {% if
+                                                        produto.acumulador==acumulador.codigo %}selected{% endif %}>{{
+                                                        acumulador.codigo }} - {{ acumulador.descricao }}</option>
                                                     {% endfor %}
                                                 </select>
                                             </td>
@@ -420,13 +470,17 @@
                     <div class="card">
                         <div class="card-body p-3">
                             <div class="d-flex justify-content-between align-items-center mb-4">
-                                <h4 class="card-title mb-0"><i class="bi bi-cart-check me-2"></i>Relatório de Vendas</h4>
+                                <h4 class="card-title mb-0"><i class="bi bi-cart-check me-2"></i>Relatório de Vendas
+                                </h4>
                                 <div class="d-flex align-items-center">
-                                    <label for="competenciaVendasFilter" class="me-2 mb-0 flex-shrink-0">Competência:</label>
+                                    <label for="competenciaVendasFilter"
+                                        class="me-2 mb-0 flex-shrink-0">Competência:</label>
                                     <div class="input-group">
-                                        <button class="btn btn-outline-secondary" type="button" id="prevVendas"><i class="bi bi-chevron-left"></i></button>
+                                        <button class="btn btn-outline-secondary" type="button" id="prevVendas"><i
+                                                class="bi bi-chevron-left"></i></button>
                                         <select id="competenciaVendasFilter" class="form-select"></select>
-                                        <button class="btn btn-outline-secondary" type="button" id="nextVendas"><i class="bi bi-chevron-right"></i></button>
+                                        <button class="btn btn-outline-secondary" type="button" id="nextVendas"><i
+                                                class="bi bi-chevron-right"></i></button>
                                     </div>
                                 </div>
                             </div>
@@ -459,13 +513,16 @@
                     <div class="card">
                         <div class="card-body p-3">
                             <div class="d-flex justify-content-between align-items-center mb-4">
-                                <h4 class="card-title mb-0"><i class="bi bi-calculator me-2"></i>Relatório por Acumulador</h4>
+                                <h4 class="card-title mb-0"><i class="bi bi-calculator me-2"></i>Relatório por
+                                    Acumulador</h4>
                                 <div class="d-flex align-items-center">
                                     <label for="competenciaFilter" class="me-2 mb-0 flex-shrink-0">Competência:</label>
                                     <div class="input-group">
-                                        <button class="btn btn-outline-secondary" type="button" id="prevAcumulador"><i class="bi bi-chevron-left"></i></button>
+                                        <button class="btn btn-outline-secondary" type="button" id="prevAcumulador"><i
+                                                class="bi bi-chevron-left"></i></button>
                                         <select id="competenciaFilter" class="form-select"></select>
-                                        <button class="btn btn-outline-secondary" type="button" id="nextAcumulador"><i class="bi bi-chevron-right"></i></button>
+                                        <button class="btn btn-outline-secondary" type="button" id="nextAcumulador"><i
+                                                class="bi bi-chevron-right"></i></button>
                                     </div>
                                 </div>
                             </div>
@@ -486,16 +543,20 @@
 
                 <!-- Relatório por CFOP Tab -->
                 <div class="tab-pane fade" id="relatorio-cfop" role="tabpanel">
-                     <div class="card">
+                    <div class="card">
                         <div class="card-body p-3">
                             <div class="d-flex justify-content-between align-items-center mb-4">
-                                <h4 class="card-title mb-0"><i class="bi bi-bar-chart-line me-2"></i>Relatório por CFOP</h4>
+                                <h4 class="card-title mb-0"><i class="bi bi-bar-chart-line me-2"></i>Relatório por CFOP
+                                </h4>
                                 <div class="d-flex align-items-center">
-                                    <label for="competenciaCfopFilter" class="me-2 mb-0 flex-shrink-0">Competência:</label>
+                                    <label for="competenciaCfopFilter"
+                                        class="me-2 mb-0 flex-shrink-0">Competência:</label>
                                     <div class="input-group">
-                                        <button class="btn btn-outline-secondary" type="button" id="prevCfop"><i class="bi bi-chevron-left"></i></button>
+                                        <button class="btn btn-outline-secondary" type="button" id="prevCfop"><i
+                                                class="bi bi-chevron-left"></i></button>
                                         <select id="competenciaCfopFilter" class="form-select"></select>
-                                        <button class="btn btn-outline-secondary" type="button" id="nextCfop"><i class="bi bi-chevron-right"></i></button>
+                                        <button class="btn btn-outline-secondary" type="button" id="nextCfop"><i
+                                                class="bi bi-chevron-right"></i></button>
                                     </div>
                                 </div>
                             </div>
@@ -537,11 +598,13 @@
                 </div>
                 <div class="modal-body">
                     <div class="d-flex justify-content-between align-items-center mb-4">
-                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#novoAcumuladorModal">
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal"
+                            data-bs-target="#novoAcumuladorModal">
                             <i class="bi bi-plus-lg me-2"></i>Novo Acumulador
                         </button>
                         <div class="d-flex align-items-center gap-3">
-                            <input type="text" id="searchAcumuladores" class="form-control" placeholder="Pesquisar acumuladores...">
+                            <input type="text" id="searchAcumuladores" class="form-control"
+                                placeholder="Pesquisar acumuladores...">
                         </div>
                     </div>
                     <div class="table-responsive">
@@ -561,10 +624,12 @@
                                     <td>{{ acumulador.descricao }}</td>
                                     <td>{{ acumulador.cfop }}</td>
                                     <td>
-                                        <button type="button" class="btn btn-sm btn-warning edit-acumulador" data-codigo="{{ acumulador.codigo }}" title="Editar Acumulador">
+                                        <button type="button" class="btn btn-sm btn-warning edit-acumulador"
+                                            data-codigo="{{ acumulador.codigo }}" title="Editar Acumulador">
                                             <i class="bi bi-pencil"></i>
                                         </button>
-                                        <button type="button" class="btn btn-sm btn-danger delete-acumulador" data-codigo="{{ acumulador.codigo }}" title="Excluir Acumulador">
+                                        <button type="button" class="btn btn-sm btn-danger delete-acumulador"
+                                            data-codigo="{{ acumulador.codigo }}" title="Excluir Acumulador">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </td>
@@ -583,7 +648,8 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="acumuladorModalTitle"><i class="bi bi-plus-lg me-2"></i>Novo Acumulador</h5>
+                    <h5 class="modal-title" id="acumuladorModalTitle"><i class="bi bi-plus-lg me-2"></i>Novo Acumulador
+                    </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
@@ -627,7 +693,8 @@
                 </div>
                 <div class="modal-body">
                     <div class="d-flex justify-content-between align-items-center mb-4">
-                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#novoCfopModal">
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal"
+                            data-bs-target="#novoCfopModal">
                             <i class="bi bi-plus-lg me-2"></i>Novo CFOP
                         </button>
                         <div class="d-flex align-items-center gap-3">
@@ -648,10 +715,12 @@
                                     <td>{{ cfop.codigo }}</td>
                                     <td>{{ cfop.descricao }}</td>
                                     <td>
-                                        <button type="button" class="btn btn-sm btn-warning edit-cfop" data-codigo="{{ cfop.codigo }}" title="Editar CFOP">
+                                        <button type="button" class="btn btn-sm btn-warning edit-cfop"
+                                            data-codigo="{{ cfop.codigo }}" title="Editar CFOP">
                                             <i class="bi bi-pencil"></i>
                                         </button>
-                                        <button type="button" class="btn btn-sm btn-danger delete-cfop" data-codigo="{{ cfop.codigo }}" title="Excluir CFOP">
+                                        <button type="button" class="btn btn-sm btn-danger delete-cfop"
+                                            data-codigo="{{ cfop.codigo }}" title="Excluir CFOP">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </td>
@@ -678,7 +747,8 @@
                         <input type="hidden" id="cfopOriginal" value="">
                         <div class="mb-3">
                             <label for="cfopCodigo" class="form-label">CFOP</label>
-                            <input type="text" class="form-control" id="cfopCodigo" required pattern="[1-7][0-9]{3}" maxlength="4">
+                            <input type="text" class="form-control" id="cfopCodigo" required pattern="[1-7][0-9]{3}"
+                                maxlength="4">
                             <div class="invalid-feedback">
                                 CFOP inválido. Digite 4 dígitos começando com 1, 2, 3, 5, 6 ou 7.
                             </div>
@@ -694,6 +764,106 @@
         </div>
     </div>
 
+    <!-- Modal Inconsistências -->
+    <div class="modal fade" id="inconsistenciasModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title"><i class="bi bi-exclamation-triangle me-2"></i>Análise de Inconsistências
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted mb-3">
+                        Produtos com NCM igual (ou similar) E descrições similares (≥80%) mas acumuladores diferentes.
+                        Isso indica classificações inconsistentes que precisam de revisão.
+                    </p>
+                    <div id="inconsistenciasLoading" class="text-center py-4">
+                        <div class="spinner-border text-warning" role="status">
+                            <span class="visually-hidden">Analisando...</span>
+                        </div>
+                        <p class="mt-2">Analisando produtos...</p>
+                    </div>
+                    <div id="inconsistenciasResultado" class="d-none">
+                        <div id="inconsistenciasAlerta" class="alert d-none"></div>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span id="inconsistenciasContador" class="text-muted"></span>
+                        </div>
+                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                            <table class="table table-striped table-hover align-middle">
+                                <thead class="table-dark sticky-top">
+                                    <tr>
+                                        <th>Código</th>
+                                        <th>Descrição</th>
+                                        <th>NCM</th>
+                                        <th>Acumulador</th>
+                                        <th class="text-center">Ação</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="inconsistenciasBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Classificação Automática -->
+    <div class="modal fade" id="classificacaoAutoModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title"><i class="bi bi-magic me-2"></i>Classificação Automática</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted mb-3">
+                        Sugestões de acumuladores baseadas em produtos já classificados com NCM e descrição similares.
+                        Revise e aprove ou rejeite cada sugestão.
+                    </p>
+                    <div id="classificacaoLoading" class="text-center py-4">
+                        <div class="spinner-border text-success" role="status">
+                            <span class="visually-hidden">Analisando...</span>
+                        </div>
+                        <p class="mt-2">Analisando produtos sem acumulador...</p>
+                    </div>
+                    <div id="classificacaoResultado" class="d-none">
+                        <div id="classificacaoAlerta" class="alert d-none"></div>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span id="classificacaoContador" class="text-muted"></span>
+                            <div>
+                                <button type="button" class="btn btn-success btn-sm" id="btnAprovarTodas">
+                                    <i class="bi bi-check-all me-1"></i>Aprovar Todas
+                                </button>
+                            </div>
+                        </div>
+                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                            <table class="table table-striped table-hover align-middle">
+                                <thead class="table-dark sticky-top">
+                                    <tr>
+                                        <th>Código</th>
+                                        <th>Descrição</th>
+                                        <th>NCM</th>
+                                        <th>Acumulador</th>
+                                        <th class="text-center">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="classificacaoBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="toast-container">
         <div id="toastContainer"></div>
     </div>
@@ -703,7 +873,7 @@
     <script src="/static/js/main.js"></script>
     <script src="/static/js/sped.js"></script>
     <!-- Todo o JavaScript foi movido para static/js/sped.js -->
-    
+
     <script>
         function toggleSidebar(expand) {
             const sidebar = document.getElementById('sidebar');
@@ -738,4 +908,5 @@
         });
     </script>
 </body>
+
 </html>

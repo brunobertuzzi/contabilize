@@ -15,16 +15,21 @@ class Config:
     DEBUG = os.environ.get('FLASK_DEBUG', '1') == '1'
     TESTING = False
     
-    # Configurações de segurança
+    # Configurações de segurança - Chave secreta
     SECRET_KEY = os.environ.get('SECRET_KEY')
     if not SECRET_KEY:
-        # Gera uma chave secreta forte se não estiver definida
-        with open('.secret_key', 'a+b') as f:
-            f.seek(0)
-            SECRET_KEY = f.read()
-            if not SECRET_KEY:
-                SECRET_KEY = secrets.token_bytes(32)
+        # Tenta ler de arquivo existente ou gera nova chave
+        secret_key_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.secret_key')
+        try:
+            with open(secret_key_file, 'rb') as f:
+                SECRET_KEY = f.read()
+                if len(SECRET_KEY) < 32:
+                    raise ValueError("Chave muito curta")
+        except (FileNotFoundError, ValueError):
+            SECRET_KEY = secrets.token_bytes(64)  # 512 bits para maior segurança
+            with open(secret_key_file, 'wb') as f:
                 f.write(SECRET_KEY)
+            logging.warning("SECURITY: Nova chave secreta gerada. Configure SECRET_KEY em variável de ambiente para produção.")
     
     # Configurações de sessão e cookies
     SESSION_COOKIE_NAME = 'contabilize_session'
@@ -57,7 +62,7 @@ class Config:
     
     # Configurações de log
     LOG_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'logs')
-    LOG_LEVEL = os.environ.get('LOG_LEVEL', 'DEBUG')
+    LOG_LEVEL = os.environ.get('LOG_LEVEL', 'DEBUG' if DEBUG else 'INFO')
     LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     LOG_MAX_SIZE = 10 * 1024 * 1024  # 10MB
     LOG_BACKUP_COUNT = 5

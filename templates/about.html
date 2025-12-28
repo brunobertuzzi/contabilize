@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -45,10 +46,11 @@
             width: 80px;
         }
 
-        .sidebar.collapsed .nav-link-text, .sidebar.collapsed .navbar-brand .brand-text {
+        .sidebar.collapsed .nav-link-text,
+        .sidebar.collapsed .navbar-brand .brand-text {
             display: none;
         }
-        
+
         .sidebar .navbar-brand {
             color: var(--sidebar-text) !important;
             padding: 1.5rem 1.25rem;
@@ -77,11 +79,12 @@
             font-weight: 400;
         }
 
-        .sidebar .nav-link:hover, .sidebar .nav-link.active {
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
             background-color: var(--sidebar-hover) !important;
             color: var(--text-light) !important;
         }
-        
+
         .sidebar .nav-link.active {
             background-color: var(--sidebar-hover) !important;
             color: var(--text-light) !important;
@@ -153,8 +156,10 @@
         }
 
         .terms-box {
-            height: 400px; /* Altura fixa para a caixa de rolagem */
-            overflow-y: auto; /* Habilita a rolagem vertical */
+            height: 400px;
+            /* Altura fixa para a caixa de rolagem */
+            overflow-y: auto;
+            /* Habilita a rolagem vertical */
             border: 1px solid var(--background-dark);
             padding: 1.5rem;
             border-radius: 0.5rem;
@@ -162,6 +167,7 @@
         }
     </style>
 </head>
+
 <body>
     <!-- Sidebar -->
     {% include 'sidebar.html' %}
@@ -182,29 +188,48 @@
                 <div class="card-body p-lg-5">
                     <div class="row align-items-center">
                         <div class="col-lg-8">
-                            <h3 class="card-title mb-3 fw-bold" style="color: var(--primary-dark);"><i class="bi bi-file-earmark-text me-2"></i>O que é o Contabilize?</h3>
-                            <p class="lead">O Contabilize é um sistema de gestão fiscal e contábil projetado para simplificar a análise e o gerenciamento de arquivos SPED Fiscal. Ele oferece uma interface intuitiva para importar, visualizar e gerar relatórios a partir dos dados fiscais da sua empresa.</p>
+                            <h3 class="card-title mb-3 fw-bold" style="color: var(--primary-dark);"><i
+                                    class="bi bi-file-earmark-text me-2"></i>O que é o Contabilize?</h3>
+                            <p class="lead">O Contabilize é um sistema de gestão fiscal e contábil projetado para
+                                simplificar a análise e o gerenciamento de arquivos SPED Fiscal. Ele oferece uma
+                                interface intuitiva para importar, visualizar e gerar relatórios a partir dos dados
+                                fiscais da sua empresa.</p>
                         </div>
                         <div class="col-lg-4 text-center d-none d-lg-block">
-                            <i class="bi bi-bar-chart-line-fill" style="font-size: 8rem; color: var(--primary-light); opacity: 0.5;"></i>
+                            <i class="bi bi-bar-chart-line-fill"
+                                style="font-size: 8rem; color: var(--primary-light); opacity: 0.5;"></i>
                         </div>
                     </div>
 
                     <hr class="my-4">
 
-                    <h4 class="card-title mb-4 fw-semibold"><i class="bi bi-tools me-2"></i>Funcionalidades Principais</h4>
+                    <h4 class="card-title mb-4 fw-semibold"><i class="bi bi-tools me-2"></i>Funcionalidades Principais
+                    </h4>
                     <div class="row g-3">
                         <div class="col-md-6">
                             <ul class="list-unstyled">
-                                <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Importação de SPED Fiscal:</strong> Importe seus arquivos SPED Fiscal (.txt) de forma rápida e segura.</li>
-                                <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Gerenciamento de Produtos:</strong> Associe "acumuladores" aos seus produtos para uma correta classificação fiscal.</li>
-                                <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Relatórios Detalhados:</strong> Gere relatórios de vendas, por acumulador e por CFOP.</li>
+                                <li class="mb-2"><i
+                                        class="bi bi-check-circle-fill text-success me-2"></i><strong>Importação de SPED
+                                        Fiscal:</strong> Importe seus arquivos SPED Fiscal (.txt) de forma rápida e
+                                    segura.</li>
+                                <li class="mb-2"><i
+                                        class="bi bi-check-circle-fill text-success me-2"></i><strong>Gerenciamento de
+                                        Produtos:</strong> Associe "acumuladores" aos seus produtos para uma correta
+                                    classificação fiscal.</li>
+                                <li class="mb-2"><i
+                                        class="bi bi-check-circle-fill text-success me-2"></i><strong>Relatórios
+                                        Detalhados:</strong> Gere relatórios de vendas, por acumulador e por CFOP.</li>
                             </ul>
                         </div>
                         <div class="col-md-6">
                             <ul class="list-unstyled">
-                                <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Gerenciamento de Usuários:</strong> Crie, edite e remova usuários, com controle de permissões.</li>
-                                <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Backup e Restauração:</strong> Faça backups do banco de dados e restaure-os quando necessário.</li>
+                                <li class="mb-2"><i
+                                        class="bi bi-check-circle-fill text-success me-2"></i><strong>Gerenciamento de
+                                        Usuários:</strong> Crie, edite e remova usuários, com controle de permissões.
+                                </li>
+                                <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Backup
+                                        e Restauração:</strong> Faça backups do banco de dados e restaure-os quando
+                                    necessário.</li>
                             </ul>
                         </div>
                     </div>
@@ -214,20 +239,28 @@
             <!-- Card Termos de Uso -->
             <div class="card">
                 <div class="card-body p-lg-5">
-                    <h3 class="card-title mb-4 fw-bold" style="color: var(--primary-dark);"><i class="bi bi-file-text me-2"></i>Termo de Uso – Sistema Contabilize</h3>
+                    <h3 class="card-title mb-4 fw-bold" style="color: var(--primary-dark);"><i
+                            class="bi bi-file-text me-2"></i>Termo de Uso – Sistema Contabilize</h3>
                     <div class="terms-box">
                         <p><strong>1. DEFINIÇÕES</strong></p>
-                        <p>1.1. Sistema Contabilize: aplicação de gestão fiscal e contábil destinada à leitura, processamento e análise de arquivos SPED Fiscal (.txt).</p>
-                        <p>1.2. Desenvolvedor: pessoa física ou jurídica responsável pela concepção, programação e disponibilização do sistema.</p>
-                        <p>1.3. Usuário: pessoa física ou jurídica que acessa, utiliza ou mantém cadastro ativo no sistema.</p>
-                        <p>1.4. Administrador: usuário com privilégios de configuração, criação de contas e execução de backups.</p>
+                        <p>1.1. Sistema Contabilize: aplicação de gestão fiscal e contábil destinada à leitura,
+                            processamento e análise de arquivos SPED Fiscal (.txt).</p>
+                        <p>1.2. Desenvolvedor: pessoa física ou jurídica responsável pela concepção, programação e
+                            disponibilização do sistema.</p>
+                        <p>1.3. Usuário: pessoa física ou jurídica que acessa, utiliza ou mantém cadastro ativo no
+                            sistema.</p>
+                        <p>1.4. Administrador: usuário com privilégios de configuração, criação de contas e execução de
+                            backups.</p>
 
                         <p><strong>2. ACEITAÇÃO DOS TERMOS</strong></p>
-                        <p>2.1. O uso do sistema implica plena, irrevogável e irrestrita concordância com todas as disposições deste Termo.</p>
-                        <p>2.2. Caso o usuário não concorde com qualquer cláusula, deve interromper imediatamente o uso e desinstalar o sistema.</p>
+                        <p>2.1. O uso do sistema implica plena, irrevogável e irrestrita concordância com todas as
+                            disposições deste Termo.</p>
+                        <p>2.2. Caso o usuário não concorde com qualquer cláusula, deve interromper imediatamente o uso
+                            e desinstalar o sistema.</p>
 
                         <p><strong>3. OBJETO</strong></p>
-                        <p>3.1. O Sistema Contabilize tem por finalidade oferecer ferramentas de apoio à gestão e análise fiscal, incluindo:</p>
+                        <p>3.1. O Sistema Contabilize tem por finalidade oferecer ferramentas de apoio à gestão e
+                            análise fiscal, incluindo:</p>
                         <ul>
                             <li>a) Importação e leitura de arquivos SPED Fiscal;</li>
                             <li>b) Organização de produtos e acumuladores fiscais;</li>
@@ -235,61 +268,88 @@
                             <li>d) Controle de usuários e permissões;</li>
                             <li>e) Execução de rotinas de backup e restauração de dados.</li>
                         </ul>
-                        <p>3.2. O sistema não substitui sistemas oficiais da Receita Federal, escrituração fiscal digital, contabilidade formal ou auditoria tributária.</p>
+                        <p>3.2. O sistema não substitui sistemas oficiais da Receita Federal, escrituração fiscal
+                            digital, contabilidade formal ou auditoria tributária.</p>
 
                         <p><strong>4. RESPONSABILIDADES DO USUÁRIO</strong></p>
-                        <p>4.1. O usuário reconhece que é o único responsável pela veracidade, integridade e conformidade fiscal dos dados importados, processados e exportados.</p>
+                        <p>4.1. O usuário reconhece que é o único responsável pela veracidade, integridade e
+                            conformidade fiscal dos dados importados, processados e exportados.</p>
                         <p>4.2. É de responsabilidade exclusiva do usuário:</p>
                         <ul>
-                            <li>a) Realizar conferência de todos os dados antes de qualquer entrega fiscal ou contábil;</li>
+                            <li>a) Realizar conferência de todos os dados antes de qualquer entrega fiscal ou contábil;
+                            </li>
                             <li>b) Manter cópias de segurança externas e independentes;</li>
-                            <li>c) Garantir que o uso do sistema esteja de acordo com as legislações aplicáveis (federais, estaduais e municipais);</li>
+                            <li>c) Garantir que o uso do sistema esteja de acordo com as legislações aplicáveis
+                                (federais, estaduais e municipais);</li>
                             <li>d) Restringir o acesso de terceiros não autorizados.</li>
                         </ul>
-                        <p>4.3. Qualquer cálculo, relatório, totalização ou agregação gerada pelo sistema deve ser tratada como estimativa, cabendo ao usuário realizar validação independente.</p>
+                        <p>4.3. Qualquer cálculo, relatório, totalização ou agregação gerada pelo sistema deve ser
+                            tratada como estimativa, cabendo ao usuário realizar validação independente.</p>
 
                         <p><strong>5. ISENÇÃO DE RESPONSABILIDADE DO DESENVOLVEDOR</strong></p>
                         <p>5.1. O desenvolvedor não se responsabiliza, em nenhuma hipótese, por:</p>
                         <ul>
-                            <li>a) Erros tributários, fiscais, contábeis ou legais decorrentes de uso, interpretação ou omissão de dados;</li>
-                            <li>b) Divergências entre informações processadas pelo sistema e obrigações acessórias oficiais;</li>
-                            <li>c) Perda, corrupção, exclusão ou vazamento de dados, ainda que decorrentes de falhas técnicas, erro humano, ataques externos ou mau uso;</li>
-                            <li>d) Danos diretos, indiretos, incidentais, consequenciais, lucros cessantes, interrupções de negócio ou perda de informações fiscais;</li>
-                            <li>e) Inconsistências oriundas de versões desatualizadas do SPED, alterações legais ou parametrizações incorretas feitas pelo usuário.</li>
+                            <li>a) Erros tributários, fiscais, contábeis ou legais decorrentes de uso, interpretação ou
+                                omissão de dados;</li>
+                            <li>b) Divergências entre informações processadas pelo sistema e obrigações acessórias
+                                oficiais;</li>
+                            <li>c) Perda, corrupção, exclusão ou vazamento de dados, ainda que decorrentes de falhas
+                                técnicas, erro humano, ataques externos ou mau uso;</li>
+                            <li>d) Danos diretos, indiretos, incidentais, consequenciais, lucros cessantes, interrupções
+                                de negócio ou perda de informações fiscais;</li>
+                            <li>e) Inconsistências oriundas de versões desatualizadas do SPED, alterações legais ou
+                                parametrizações incorretas feitas pelo usuário.</li>
                         </ul>
-                        <p>5.2. O sistema é disponibilizado “no estado em que se encontra”, sem garantias explícitas ou implícitas de precisão, continuidade, estabilidade, compatibilidade ou adequação a finalidade específica.</p>
+                        <p>5.2. O sistema é disponibilizado “no estado em que se encontra”, sem garantias explícitas ou
+                            implícitas de precisão, continuidade, estabilidade, compatibilidade ou adequação a
+                            finalidade específica.</p>
 
                         <p><strong>6. BACKUP E SEGURANÇA DA INFORMAÇÃO</strong></p>
-                        <p>6.1. O sistema oferece recursos de backup e restauração, porém a responsabilidade pela execução, integridade e guarda das cópias de segurança é integralmente do usuário.</p>
-                        <p>6.2. O desenvolvedor não garante recuperação de dados perdidos por falhas de hardware, exclusão acidental, erro de operação, formatação ou ausência de backup.</p>
-                        <p>6.3. O usuário deve manter cópias redundantes dos arquivos SPED e da base de dados fora do ambiente do sistema.</p>
+                        <p>6.1. O sistema oferece recursos de backup e restauração, porém a responsabilidade pela
+                            execução, integridade e guarda das cópias de segurança é integralmente do usuário.</p>
+                        <p>6.2. O desenvolvedor não garante recuperação de dados perdidos por falhas de hardware,
+                            exclusão acidental, erro de operação, formatação ou ausência de backup.</p>
+                        <p>6.3. O usuário deve manter cópias redundantes dos arquivos SPED e da base de dados fora do
+                            ambiente do sistema.</p>
 
                         <p><strong>7. PRIVACIDADE E CONFIDENCIALIDADE</strong></p>
-                        <p>7.1. O sistema poderá armazenar localmente dados fiscais, cadastrais e operacionais apenas para viabilizar suas funções.</p>
+                        <p>7.1. O sistema poderá armazenar localmente dados fiscais, cadastrais e operacionais apenas
+                            para viabilizar suas funções.</p>
                         <p>7.2. Nenhum dado será compartilhado com terceiros, salvo por determinação legal.</p>
-                        <p>7.3. A responsabilidade pelo cumprimento da Lei Geral de Proteção de Dados (Lei nº 13.709/2018 – LGPD) é do usuário, em relação às informações que ele insere e manipula.</p>
+                        <p>7.3. A responsabilidade pelo cumprimento da Lei Geral de Proteção de Dados (Lei nº
+                            13.709/2018 – LGPD) é do usuário, em relação às informações que ele insere e manipula.</p>
 
                         <p><strong>8. LICENÇA DE USO</strong></p>
-                        <p>8.1. O desenvolvedor concede ao usuário uma licença limitada, não exclusiva, intransferível e revogável para uso do sistema.</p>
-                        <p>8.2. É expressamente proibida a engenharia reversa, modificação, cópia, revenda ou redistribuição do sistema sem autorização escrita do desenvolvedor.</p>
+                        <p>8.1. O desenvolvedor concede ao usuário uma licença limitada, não exclusiva, intransferível e
+                            revogável para uso do sistema.</p>
+                        <p>8.2. É expressamente proibida a engenharia reversa, modificação, cópia, revenda ou
+                            redistribuição do sistema sem autorização escrita do desenvolvedor.</p>
 
                         <p><strong>9. SUPORTE E MANUTENÇÃO</strong></p>
-                        <p>9.1. O suporte técnico, quando disponível, restringe-se a dúvidas sobre uso do sistema e correção de falhas operacionais.</p>
+                        <p>9.1. O suporte técnico, quando disponível, restringe-se a dúvidas sobre uso do sistema e
+                            correção de falhas operacionais.</p>
                         <p>9.2. O desenvolvedor não presta consultoria contábil, tributária ou fiscal.</p>
-                        <p>9.3. Atualizações podem ser implementadas sem aviso prévio. O uso continuado implica aceitação das novas condições.</p>
+                        <p>9.3. Atualizações podem ser implementadas sem aviso prévio. O uso continuado implica
+                            aceitação das novas condições.</p>
 
                         <p><strong>10. LIMITAÇÃO DE RESPONSABILIDADE LEGAL</strong></p>
-                        <p>10.1. Em qualquer hipótese, a responsabilidade total do desenvolvedor estará limitada ao valor eventualmente pago pelo usuário pela licença de uso, se houver.</p>
-                        <p>10.2. Nenhuma cláusula deste termo cria relação de prestação de serviços contábeis, fiscais, societários ou de consultoria.</p>
+                        <p>10.1. Em qualquer hipótese, a responsabilidade total do desenvolvedor estará limitada ao
+                            valor eventualmente pago pelo usuário pela licença de uso, se houver.</p>
+                        <p>10.2. Nenhuma cláusula deste termo cria relação de prestação de serviços contábeis, fiscais,
+                            societários ou de consultoria.</p>
 
                         <p><strong>11. RESCISÃO E SUSPENSÃO DE USO</strong></p>
-                        <p>11.1. O descumprimento de qualquer disposição deste Termo autoriza o desenvolvedor a suspender, revogar ou bloquear o acesso do usuário.</p>
-                        <p>11.2. O usuário poderá encerrar o uso a qualquer momento, mediante exclusão de suas credenciais e remoção do sistema.</p>
+                        <p>11.1. O descumprimento de qualquer disposição deste Termo autoriza o desenvolvedor a
+                            suspender, revogar ou bloquear o acesso do usuário.</p>
+                        <p>11.2. O usuário poderá encerrar o uso a qualquer momento, mediante exclusão de suas
+                            credenciais e remoção do sistema.</p>
 
                         <p><strong>12. DISPOSIÇÕES FINAIS</strong></p>
                         <p>12.1. A nulidade de qualquer item não implica a nulidade do Termo como um todo.</p>
-                        <p>12.2. O desenvolvedor reserva-se o direito de alterar este Termo a qualquer momento, publicando a nova versão no sistema.</p>
-                        <p>12.3. O foro eleito para dirimir quaisquer controvérsias oriundas deste Termo é o da comarca de domicílio do desenvolvedor, com renúncia a qualquer outro.</p>
+                        <p>12.2. O desenvolvedor reserva-se o direito de alterar este Termo a qualquer momento,
+                            publicando a nova versão no sistema.</p>
+                        <p>12.3. O foro eleito para dirimir quaisquer controvérsias oriundas deste Termo é o da comarca
+                            de domicílio do desenvolvedor, com renúncia a qualquer outro.</p>
                     </div>
                 </div>
             </div>
@@ -303,4 +363,5 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/static/js/main.js"></script>
 </body>
+
 </html>

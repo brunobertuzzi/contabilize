@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -45,10 +46,11 @@
             width: 80px;
         }
 
-        .sidebar.collapsed .nav-link-text, .sidebar.collapsed .navbar-brand .brand-text {
+        .sidebar.collapsed .nav-link-text,
+        .sidebar.collapsed .navbar-brand .brand-text {
             display: none;
         }
-        
+
         .sidebar .navbar-brand {
             color: var(--sidebar-text) !important;
             padding: 1.5rem 1.25rem;
@@ -77,11 +79,12 @@
             font-weight: 400;
         }
 
-        .sidebar .nav-link:hover, .sidebar .nav-link.active {
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
             background-color: var(--sidebar-hover) !important;
             color: var(--text-light) !important;
         }
-        
+
         .sidebar .nav-link.active {
             background-color: var(--sidebar-hover) !important;
             color: var(--text-light) !important;
@@ -259,6 +262,7 @@
         }
     </style>
 </head>
+
 <body>
     <!-- Sidebar -->
     {% include 'sidebar.html' %}
@@ -306,26 +310,33 @@
                                                     <h6 class="mb-0 fw-semibold">{{ user.username }}</h6>
                                                     <small class="text-muted">
                                                         {% if user.is_admin %}
-                                                            <i class="bi bi-shield-check text-success me-1"></i>Administrador
+                                                        <i
+                                                            class="bi bi-shield-check text-success me-1"></i>Administrador
                                                         {% else %}
-                                                            <i class="bi bi-person text-secondary me-1"></i>Usuário
+                                                        <i class="bi bi-person text-secondary me-1"></i>Usuário
                                                         {% endif %}
                                                     </small>
                                                 </div>
                                             </div>
                                             <div class="dropdown">
-                                                <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown">
+                                                <button class="btn btn-sm btn-outline-secondary" type="button"
+                                                    data-bs-toggle="dropdown">
                                                     <i class="bi bi-three-dots-vertical"></i>
                                                 </button>
                                                 <ul class="dropdown-menu">
                                                     <li>
-                                                        <button class="dropdown-item edit-user-btn" data-user-id="{{ user.id }}" data-username="{{ user.username }}" data-is-admin="{{ user.is_admin|string|lower }}">
+                                                        <button class="dropdown-item edit-user-btn"
+                                                            data-user-id="{{ user.id }}"
+                                                            data-username="{{ user.username }}"
+                                                            data-is-admin="{{ user.is_admin|string|lower }}">
                                                             <i class="bi bi-pencil me-2"></i>Editar
                                                         </button>
                                                     </li>
                                                     {% if current_user.id != user.id %}
                                                     <li>
-                                                        <button class="dropdown-item text-danger delete-user-btn" data-user-id="{{ user.id }}" data-username="{{ user.username }}">
+                                                        <button class="dropdown-item text-danger delete-user-btn"
+                                                            data-user-id="{{ user.id }}"
+                                                            data-username="{{ user.username }}">
                                                             <i class="bi bi-trash me-2"></i>Excluir
                                                         </button>
                                                     </li>
@@ -341,22 +352,24 @@
                             <!-- Formulário de Novo Usuário -->
                             <div class="border-top pt-4">
                                 <h6 class="fw-semibold mb-3">
-                                    <i class="bi bi-person-plus me-2" style="color: var(--primary-color);"></i>Adicionar Novo Usuário
+                                    <i class="bi bi-person-plus me-2" style="color: var(--primary-color);"></i>Adicionar
+                                    Novo Usuário
                                 </h6>
                                 <form id="addUserForm" class="row g-3">
                                     <div class="col-md-4">
-                                        <input type="text" class="form-control" id="username" name="username" 
-                                               placeholder="Nome de usuário" required minlength="3" maxlength="50">
+                                        <input type="text" class="form-control" id="username" name="username"
+                                            placeholder="Nome de usuário" required minlength="3" maxlength="50">
                                         <div class="form-text">3-50 caracteres</div>
                                     </div>
                                     <div class="col-md-4">
-                                        <input type="password" class="form-control" id="password" name="password" 
-                                               placeholder="Senha" required minlength="8">
+                                        <input type="password" class="form-control" id="password" name="password"
+                                            placeholder="Senha" required minlength="8">
                                         <div class="form-text">Mín. 8 caracteres, 2 tipos diferentes</div>
                                     </div>
                                     <div class="col-md-2">
                                         <div class="form-check">
-                                            <input type="checkbox" class="form-check-input" id="is_admin" name="is_admin">
+                                            <input type="checkbox" class="form-check-input" id="is_admin"
+                                                name="is_admin">
                                             <label class="form-check-label small" for="is_admin">Administrador</label>
                                         </div>
                                     </div>
@@ -366,17 +379,20 @@
                                         </button>
                                     </div>
                                 </form>
-                                
+
                                 <!-- Requisitos de Senha -->
                                 <div class="mt-3 p-3 bg-light rounded">
                                     <h6 class="fw-semibold mb-2">
-                                        <i class="bi bi-shield-check me-2" style="color: var(--primary-color);"></i>Requisitos de Senha
+                                        <i class="bi bi-shield-check me-2"
+                                            style="color: var(--primary-color);"></i>Requisitos de Senha
                                     </h6>
                                     <div class="row">
                                         <div class="col-md-6">
                                             <ul class="list-unstyled mb-0 small">
-                                                <li><i class="bi bi-check-circle text-success me-1"></i>Mínimo de 8 caracteres</li>
-                                                <li><i class="bi bi-check-circle text-success me-1"></i>Pelo menos 2 tipos de caracteres:</li>
+                                                <li><i class="bi bi-check-circle text-success me-1"></i>Mínimo de 8
+                                                    caracteres</li>
+                                                <li><i class="bi bi-check-circle text-success me-1"></i>Pelo menos 2
+                                                    tipos de caracteres:</li>
                                             </ul>
                                         </div>
                                         <div class="col-md-6">
@@ -415,10 +431,12 @@
                                 <div class="col-md-6">
                                     <div class="backup-action-card h-100 p-4 border rounded-3 text-center">
                                         <div class="mb-3">
-                                            <i class="bi bi-download display-6" style="color: var(--primary-color);"></i>
+                                            <i class="bi bi-download display-6"
+                                                style="color: var(--primary-color);"></i>
                                         </div>
                                         <h6 class="fw-semibold mb-2">Criar Backup</h6>
-                                        <p class="text-muted small mb-3">Gere uma cópia de segurança completa do banco de dados</p>
+                                        <p class="text-muted small mb-3">Gere uma cópia de segurança completa do banco
+                                            de dados</p>
                                         <button type="button" id="backupDatabaseBtn" class="btn btn-primary">
                                             <i class="bi bi-download me-2"></i>Fazer Backup
                                         </button>
@@ -429,13 +447,16 @@
                                 <div class="col-md-6">
                                     <div class="backup-action-card h-100 p-4 border rounded-3 text-center">
                                         <div class="mb-3">
-                                            <i class="bi bi-upload display-6" style="color: var(--secondary-color);"></i>
+                                            <i class="bi bi-upload display-6"
+                                                style="color: var(--secondary-color);"></i>
                                         </div>
                                         <h6 class="fw-semibold mb-2">Restaurar Backup</h6>
-                                        <p class="text-muted small mb-3">Substitua os dados atuais por um backup anterior</p>
+                                        <p class="text-muted small mb-3">Substitua os dados atuais por um backup
+                                            anterior</p>
                                         <form id="restoreDatabaseForm" enctype="multipart/form-data">
                                             <div class="mb-3">
-                                                <input type="file" class="form-control form-control-sm" id="backup_file" name="backup_file" accept=".db" required>
+                                                <input type="file" class="form-control form-control-sm" id="backup_file"
+                                                    name="backup_file" accept=".db" required>
                                             </div>
                                             <button type="submit" class="btn btn-secondary">
                                                 <i class="bi bi-upload me-2"></i>Restaurar
@@ -475,14 +496,16 @@
                         <h6>Alterar Senha (Opcional)</h6>
                         <div class="mb-3">
                             <label for="newPassword" class="form-label">Nova Senha</label>
-                            <input type="password" class="form-control" id="newPassword" name="new_password" minlength="8">
+                            <input type="password" class="form-control" id="newPassword" name="new_password"
+                                minlength="8">
                             <div class="form-text">Mínimo 8 caracteres, pelo menos 2 tipos diferentes</div>
                         </div>
                         <div class="mb-3">
                             <label for="confirmNewPassword" class="form-label">Confirmar Nova Senha</label>
-                            <input type="password" class="form-control" id="confirmNewPassword" name="confirm_new_password" minlength="8">
+                            <input type="password" class="form-control" id="confirmNewPassword"
+                                name="confirm_new_password" minlength="8">
                         </div>
-                        
+
                         <!-- Requisitos de Senha no Modal -->
                         <div class="alert alert-info">
                             <h6 class="alert-heading mb-2">
@@ -518,27 +541,27 @@
             if (password.length < 8) {
                 return 'Senha deve ter pelo menos 8 caracteres';
             }
-            
+
             const hasUpper = /[A-Z]/.test(password);
             const hasLower = /[a-z]/.test(password);
             const hasDigit = /[0-9]/.test(password);
             const hasSpecial = /[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]/.test(password);
-            
+
             const strengthCount = [hasUpper, hasLower, hasDigit, hasSpecial].filter(Boolean).length;
-            
+
             if (strengthCount < 2) {
                 return 'Senha deve conter pelo menos 2 tipos de caracteres: maiúsculas, minúsculas, números ou símbolos';
             }
-            
+
             return null; // Senha válida
         }
 
         // Validação em tempo real para o campo de senha do formulário de adicionar
-        document.getElementById('password').addEventListener('input', function() {
+        document.getElementById('password').addEventListener('input', function () {
             const password = this.value;
             const error = validatePasswordStrength(password);
             const formText = this.nextElementSibling;
-            
+
             if (error && password.length > 0) {
                 this.classList.add('is-invalid');
                 formText.textContent = error;
@@ -551,13 +574,13 @@
         });
 
         // Validação em tempo real para o campo de nova senha no modal
-        document.getElementById('newPassword').addEventListener('input', function() {
+        document.getElementById('newPassword').addEventListener('input', function () {
             const password = this.value;
             if (password.length === 0) return; // Não valida se estiver vazio (campo opcional)
-            
+
             const error = validatePasswordStrength(password);
             const formText = this.nextElementSibling;
-            
+
             if (error) {
                 this.classList.add('is-invalid');
                 formText.textContent = error;
@@ -570,12 +593,12 @@
         });
 
         // Validação de confirmação de senha no modal
-        document.getElementById('confirmNewPassword').addEventListener('input', function() {
+        document.getElementById('confirmNewPassword').addEventListener('input', function () {
             const password = document.getElementById('newPassword').value;
             const confirmPassword = this.value;
-            
+
             if (confirmPassword.length === 0) return;
-            
+
             if (password !== confirmPassword) {
                 this.setCustomValidity('As senhas não coincidem');
                 this.classList.add('is-invalid');
@@ -586,18 +609,18 @@
         });
 
         // Gerenciamento de Usuários
-        document.getElementById('addUserForm').addEventListener('submit', function(e) {
+        document.getElementById('addUserForm').addEventListener('submit', function (e) {
             e.preventDefault();
-            
+
             // Validação adicional antes do envio
             const password = document.getElementById('password').value;
             const passwordError = validatePasswordStrength(password);
-            
+
             if (passwordError) {
                 showToast(passwordError, 'danger');
                 return;
             }
-            
+
             const formData = new FormData(this);
             const formDataObj = {};
             formData.forEach((value, key) => {
@@ -616,21 +639,21 @@
                 },
                 body: JSON.stringify(formDataObj)
             })
-            .then(response => response.json())
-            .then(data => {
-                showToast(data.message, data.success ? 'success' : 'danger');
-                if (data.success) {
-                    this.reset(); // Limpa o formulário
-                    setTimeout(() => window.location.reload(), 1500); // Mantido por simplicidade, mas o ideal seria adicionar a linha na tabela dinamicamente.
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showToast('Erro ao adicionar usuário', 'danger');
-            })
-            .finally(() => {
-                hideSpinner();
-            });
+                .then(response => response.json())
+                .then(data => {
+                    showToast(data.message, data.success ? 'success' : 'danger');
+                    if (data.success) {
+                        this.reset(); // Limpa o formulário
+                        setTimeout(() => window.location.reload(), 1500); // Mantido por simplicidade, mas o ideal seria adicionar a linha na tabela dinamicamente.
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showToast('Erro ao adicionar usuário', 'danger');
+                })
+                .finally(() => {
+                    hideSpinner();
+                });
         });
 
         document.querySelectorAll('.edit-user-btn').forEach(btn => {
@@ -643,26 +666,26 @@
             });
         });
 
-        document.getElementById('editUserForm').addEventListener('submit', function(e) {
+        document.getElementById('editUserForm').addEventListener('submit', function (e) {
             e.preventDefault();
-            
+
             // Validação adicional da nova senha se fornecida
             const newPassword = document.getElementById('newPassword').value;
             const confirmPassword = document.getElementById('confirmNewPassword').value;
-            
+
             if (newPassword) {
                 const passwordError = validatePasswordStrength(newPassword);
                 if (passwordError) {
                     showToast(passwordError, 'danger');
                     return;
                 }
-                
+
                 if (newPassword !== confirmPassword) {
                     showToast('As senhas não coincidem', 'danger');
                     return;
                 }
             }
-            
+
             const userId = document.getElementById('editUserId').value;
             const formData = new FormData(this);
             const formDataObj = {};
@@ -673,7 +696,7 @@
                     formDataObj[key] = value;
                 }
             });
-            
+
             showSpinner();
             fetch(`/settings/edit_user/${userId}`, {
                 method: 'POST',
@@ -682,33 +705,33 @@
                 },
                 body: JSON.stringify(formDataObj)
             })
-            .then(response => response.json())
-            .then(data => {
-                showToast(data.message, data.success ? 'success' : 'danger');
-                if (data.success) {
-                    editUserModal.hide();
-                    // Atualiza a linha da tabela dinamicamente
-                    const row = document.querySelector(`tr[data-user-id='${userId}']`);
-                    if (row) {
-                        row.cells[0].textContent = data.user.username;
-                        const adminCell = row.cells[1];
-                        adminCell.innerHTML = data.user.is_admin
-                            ? '<i class="bi bi-check-circle-fill text-success"></i>'
-                            : '<i class="bi bi-x-circle-fill text-danger"></i>';
-                        
-                        // Atualiza os atributos data-* nos botões
-                        row.querySelector('.edit-user-btn').dataset.username = data.user.username;
-                        row.querySelector('.delete-user-btn').dataset.username = data.user.username;
+                .then(response => response.json())
+                .then(data => {
+                    showToast(data.message, data.success ? 'success' : 'danger');
+                    if (data.success) {
+                        editUserModal.hide();
+                        // Atualiza a linha da tabela dinamicamente
+                        const row = document.querySelector(`tr[data-user-id='${userId}']`);
+                        if (row) {
+                            row.cells[0].textContent = data.user.username;
+                            const adminCell = row.cells[1];
+                            adminCell.innerHTML = data.user.is_admin
+                                ? '<i class="bi bi-check-circle-fill text-success"></i>'
+                                : '<i class="bi bi-x-circle-fill text-danger"></i>';
+
+                            // Atualiza os atributos data-* nos botões
+                            row.querySelector('.edit-user-btn').dataset.username = data.user.username;
+                            row.querySelector('.delete-user-btn').dataset.username = data.user.username;
+                        }
                     }
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showToast('Erro ao editar usuário', 'danger');
-            })
-            .finally(() => {
-                hideSpinner();
-            });
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showToast('Erro ao editar usuário', 'danger');
+                })
+                .finally(() => {
+                    hideSpinner();
+                });
         });
 
         document.querySelectorAll('.delete-user-btn').forEach(btn => {
@@ -724,73 +747,73 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({})
                     })
-                    .then(response => response.json())
-                    .then(data => {
-                        showToast(data.message, data.success ? 'success' : 'danger');
-                        if (data.success) {
-                            // Remove a linha da tabela dinamicamente
-                            document.querySelector(`tr[data-user-id='${userId}']`).remove();
-                        }
-                    })
-                    .finally(() => {
-                        hideSpinner();
-                    });
+                        .then(response => response.json())
+                        .then(data => {
+                            showToast(data.message, data.success ? 'success' : 'danger');
+                            if (data.success) {
+                                // Remove a linha da tabela dinamicamente
+                                document.querySelector(`tr[data-user-id='${userId}']`).remove();
+                            }
+                        })
+                        .finally(() => {
+                            hideSpinner();
+                        });
                 });
             });
         });
 
-                        // Backup e Restauração
-                    document.getElementById('backupDatabaseBtn').addEventListener('click', async () => {
-                        const url = '/settings/backup_database';
+        // Backup e Restauração
+        document.getElementById('backupDatabaseBtn').addEventListener('click', async () => {
+            const url = '/settings/backup_database';
 
-                        // Se o navegador suportar a File System Access API (showSaveFilePicker),
-                        // podemos pedir diretamente ao usuário onde salvar o arquivo localmente.
-                        if ('showSaveFilePicker' in window) {
-                            showSpinner();
-                            try {
-                                const response = await fetch(url);
-                                if (!response.ok) {
-                                    // tenta obter mensagem JSON de erro
-                                    const data = await response.json().catch(() => null);
-                                    showToast(data?.message || 'Erro ao criar backup', 'danger');
-                                    return;
-                                }
+            // Se o navegador suportar a File System Access API (showSaveFilePicker),
+            // podemos pedir diretamente ao usuário onde salvar o arquivo localmente.
+            if ('showSaveFilePicker' in window) {
+                showSpinner();
+                try {
+                    const response = await fetch(url);
+                    if (!response.ok) {
+                        // tenta obter mensagem JSON de erro
+                        const data = await response.json().catch(() => null);
+                        showToast(data?.message || 'Erro ao criar backup', 'danger');
+                        return;
+                    }
 
-                                const blob = await response.blob();
+                    const blob = await response.blob();
 
-                                // tentar extrair o filename do header Content-Disposition
-                                let filename = 'backup.db';
-                                const cd = response.headers.get('content-disposition');
-                                if (cd) {
-                                    const m = cd.match(/filename\*=UTF-8''([^;]+)|filename=\"?([^\";]+)\"?/);
-                                    if (m) filename = decodeURIComponent(m[1] || m[2]);
-                                }
+                    // tentar extrair o filename do header Content-Disposition
+                    let filename = 'backup.db';
+                    const cd = response.headers.get('content-disposition');
+                    if (cd) {
+                        const m = cd.match(/filename\*=UTF-8''([^;]+)|filename=\"?([^\";]+)\"?/);
+                        if (m) filename = decodeURIComponent(m[1] || m[2]);
+                    }
 
-                                const opts = {
-                                    suggestedName: filename,
-                                    types: [{ description: 'SQLite DB', accept: { 'application/x-sqlite3': ['.db'] } }]
-                                };
+                    const opts = {
+                        suggestedName: filename,
+                        types: [{ description: 'SQLite DB', accept: { 'application/x-sqlite3': ['.db'] } }]
+                    };
 
-                                const handle = await window.showSaveFilePicker(opts);
-                                const writable = await handle.createWritable();
-                                await writable.write(blob);
-                                await writable.close();
+                    const handle = await window.showSaveFilePicker(opts);
+                    const writable = await handle.createWritable();
+                    await writable.write(blob);
+                    await writable.close();
 
-                                showToast('Backup salvo com sucesso', 'success');
-                            } catch (err) {
-                                console.error('Erro ao salvar backup via File System API:', err);
-                                showToast('Erro ao salvar backup localmente', 'danger');
-                            } finally {
-                                hideSpinner();
-                            }
-                        } else {
-                            // Fallback: inicia o download normal (navegador abre diálogo ou salva em Downloads)
-                            window.location.href = url;
-                            showToast('Iniciando download do backup...', 'info');
-                        }
-                    });
+                    showToast('Backup salvo com sucesso', 'success');
+                } catch (err) {
+                    console.error('Erro ao salvar backup via File System API:', err);
+                    showToast('Erro ao salvar backup localmente', 'danger');
+                } finally {
+                    hideSpinner();
+                }
+            } else {
+                // Fallback: inicia o download normal (navegador abre diálogo ou salva em Downloads)
+                window.location.href = url;
+                showToast('Iniciando download do backup...', 'info');
+            }
+        });
 
-        document.getElementById('restoreDatabaseForm').addEventListener('submit', function(e) {
+        document.getElementById('restoreDatabaseForm').addEventListener('submit', function (e) {
             e.preventDefault();
             const formData = new FormData(this);
             showSpinner();
@@ -810,4 +833,5 @@
 
     </script>
 </body>
+
 </html>

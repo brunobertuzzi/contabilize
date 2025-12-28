@@ -4,7 +4,7 @@ import sys
 from datetime import datetime, timedelta, timezone
 from flask import Flask, render_template, jsonify, request, current_app, session, redirect, url_for, flash, make_response
 from flask_login import LoginManager, login_user, logout_user, current_user, login_required
-from scripts.database import User, get_db
+from scripts.database import User, LoginAttempt, get_db
 from scripts.config import Config
 from scripts.initialization import initialize_database, has_admin_user, create_admin_user, validate_password_strength
 from scripts.security_middleware import apply_security_headers
@@ -80,52 +80,54 @@ def create_app(testing=False):
     def about():
         return render_template('about.html', active_page='about')
 
-    def _handle_failed_login(username):
-        """Incrementa o contador de falhas de login para um usuário."""
-        now = datetime.now(timezone.utc)
-        failed_attempts = session.get('failed_attempts', {})
-        user_attempts = failed_attempts.get(username, {'count': 0})
-        user_attempts['count'] += 1
-        user_attempts['last_attempt'] = now.isoformat()
-        failed_attempts[username] = user_attempts
-        session['failed_attempts'] = failed_attempts
-        
-        remaining_attempts = Config.MAX_LOGIN_ATTEMPTS - user_attempts['count']
-        if remaining_attempts > 0:
-            flash(f'Nome de usuário ou senha inválidos. Tentativas restantes: {remaining_attempts}', 'danger')
-        else:
-            flash('Conta temporariamente bloqueada devido a múltiplas tentativas falhas.', 'danger')
+    def _record_login_attempt(username: str, success: bool):
+        """Registra tentativa de login no banco de dados."""
+        try:
+            with get_db() as db:
+                attempt = LoginAttempt(
+                    username=username,
+                    ip_address=request.remote_addr or '0.0.0.0',
+                    success=success
+                )
+                db.add(attempt)
+                db.commit()
+        except Exception as e:
+            logging.error(f"Erro ao registrar tentativa de login: {e}")
 
-    def _clear_failed_login_attempts(username):
-        """Limpa as tentativas de falha de login para um usuário."""
-        failed_attempts = session.get('failed_attempts', {})
-        if username in failed_attempts:
-            del failed_attempts[username]
-            session['failed_attempts'] = failed_attempts
-            
-    def _check_and_handle_lockout(username):
-        """Verifica se o usuário está bloqueado devido a múltiplas tentativas falhas."""
-        now = datetime.now(timezone.utc)
-        failed_attempts = session.get('failed_attempts', {})
-        user_attempts = failed_attempts.get(username, {'count': 0, 'last_attempt': None})
+    def _check_lockout(username: str):
+        """Verifica se o usuário está bloqueado. Retorna (is_locked, remaining_minutes)."""
+        try:
+            with get_db() as db:
+                return LoginAttempt.is_locked_out(
+                    db, 
+                    username, 
+                    max_attempts=Config.MAX_LOGIN_ATTEMPTS,
+                    window_minutes=int(Config.LOGIN_LOCKOUT_DURATION.total_seconds() / 60)
+                )
+        except Exception as e:
+            logging.error(f"Erro ao verificar lockout: {e}")
+            return False, 0
 
-        if user_attempts.get('last_attempt') and user_attempts['count'] >= Config.MAX_LOGIN_ATTEMPTS:
-            try:
-                last_attempt = datetime.fromisoformat(user_attempts['last_attempt'])
-                lockout_end = last_attempt + Config.LOGIN_LOCKOUT_DURATION
-                
-                if now < lockout_end:
-                    remaining_time = (lockout_end - now).total_seconds() / 60
-                    flash(f'Conta temporariamente bloqueada. Tente novamente em {int(remaining_time) + 1} minutos.', 'danger')
-                    return render_template('login.html', last_username=username)
-                else:
-                    # Se o tempo de bloqueio passou, reseta as tentativas
-                    user_attempts['count'] = 0
-                    failed_attempts[username] = user_attempts
-                    session['failed_attempts'] = failed_attempts
-            except (ValueError, TypeError):
-                pass
-        return None
+    def _clear_login_attempts(username: str):
+        """Limpa tentativas de login após sucesso."""
+        try:
+            with get_db() as db:
+                LoginAttempt.clear_attempts(db, username)
+        except Exception as e:
+            logging.error(f"Erro ao limpar tentativas de login: {e}")
+
+    def _get_remaining_attempts(username: str) -> int:
+        """Retorna número de tentativas restantes."""
+        try:
+            with get_db() as db:
+                failed_count = LoginAttempt.get_failed_attempts_count(
+                    db, 
+                    username,
+                    window_minutes=int(Config.LOGIN_LOCKOUT_DURATION.total_seconds() / 60)
+                )
+                return max(0, Config.MAX_LOGIN_ATTEMPTS - failed_count)
+        except Exception:
+            return Config.MAX_LOGIN_ATTEMPTS
 
     @app.route('/setup-admin', methods=['GET', 'POST'])
     def setup_admin():
@@ -192,56 +194,57 @@ def create_app(testing=False):
 
             if not username or not password:
                 flash('Por favor, preencha todos os campos.', 'warning')
-                return render_template('login.html', last_username=username)
+                return render_template('login.html')
 
-            lockout_response = _check_and_handle_lockout(username)
-            if lockout_response:
-                # Se o usuário estiver bloqueado, retorna a resposta de erro (ex: 429 Too Many Requests)
-                return lockout_response
+            # Verifica lockout baseado em banco de dados
+            is_locked, remaining_minutes = _check_lockout(username)
+            if is_locked:
+                flash(f'Conta temporariamente bloqueada. Tente novamente em {remaining_minutes} minutos.', 'danger')
+                return render_template('login.html')
 
             try:
                 with get_db() as db:
                     user = db.query(User).filter_by(username=username).first()
                     
                     if user and user.check_password(password):
-                        _clear_failed_login_attempts(username)
+                        # Login bem-sucedido
+                        _clear_login_attempts(username)
+                        _record_login_attempt(username, success=True)
+                        
                         login_user(user, remember=remember_me)
                         session['logged_in'] = True
                         session['is_admin'] = user.is_admin
                         session.permanent = True
                         
-                        logging.info(f"Login bem-sucedido para usuário: {user.username}")
+                        logging.info(f"AUDIT: Login bem-sucedido para usuário: {user.username} de IP: {request.remote_addr}")
                         
                         next_url = session.pop('next_url', url_for('index'))
                         response = make_response(redirect(next_url))
                         
-                        if remember_me:
-                            response.set_cookie(
-                                'last_username',
-                                user.username,
-                                max_age=int(Config.REMEMBER_COOKIE_DURATION.total_seconds()),
-                                httponly=True,
-                                samesite='Lax',
-                                secure=not current_app.debug
-                            )
-                        
                         flash('Login bem-sucedido!', 'success')
                         return response
                     else:
-                        _handle_failed_login(username)
+                        # Login falhou
+                        _record_login_attempt(username, success=False)
+                        remaining = _get_remaining_attempts(username)
+                        
                         if user:
-                            count = session.get('failed_attempts', {}).get(username, {}).get('count', 0)
-                            logging.warning(f"Senha incorreta para o usuário: {username}. Tentativa {count}")
+                            logging.warning(f"AUDIT: Senha incorreta para o usuário: {username} de IP: {request.remote_addr}")
                         else:
-                            logging.warning(f"Usuário não encontrado: {username}")
+                            logging.warning(f"AUDIT: Tentativa de login com usuário inexistente: {username} de IP: {request.remote_addr}")
+                        
+                        if remaining > 0:
+                            flash(f'Nome de usuário ou senha inválidos. Tentativas restantes: {remaining}', 'danger')
+                        else:
+                            flash('Conta temporariamente bloqueada devido a múltiplas tentativas falhas.', 'danger')
                             
             except Exception as e:
                 logging.error(f"Erro durante o login: {e}")
                 flash('Ocorreu um erro durante o login. Por favor, tente novamente.', 'danger')
             
-            return render_template('login.html', last_username=username)
+            return render_template('login.html')
         
-        return render_template('login.html', last_username=request.cookies.get('last_username'))
+        return render_template('login.html')
 
     @app.route('/logout')
     @login_required
@@ -250,10 +253,9 @@ def create_app(testing=False):
             username = current_user.username
             logout_user()
             
-            logging.info(f"Logout do usuário: {username}")
+            logging.info(f"AUDIT: Logout do usuário: {username}")
             
             response = make_response(redirect(url_for('login')))
-            response.delete_cookie('last_username')
             
             flash('Você foi desconectado com sucesso.', 'info')
             return response

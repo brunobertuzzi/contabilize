@@ -19,6 +19,15 @@ const SUPPRESS_TOAST_ERROR_MESSAGES = ["produto(s) sem acumulador"];
 // Variável para controlar se o spinner deve ser mostrado automaticamente
 let autoSpinnerEnabled = true;
 
+// Variável global para sugestões pendentes de classificação
+window.sugestoesPendentes = [];
+
+// Função para verificar se há sugestão para um produto
+function getSugestao(codigoItem) {
+    if (!window.sugestoesPendentes) return null;
+    return window.sugestoesPendentes.find(s => s.codigo_item === codigoItem);
+}
+
 // Funções de API
 async function fetchApi(endpoint, method = 'GET', data = null) {
     if (autoSpinnerEnabled) {
@@ -416,25 +425,51 @@ async function loadProdutos(page = 1) {
 
     response.items.forEach(produto => {
         const isChecked = selectedProducts.has(produto.codigo_item);
+        const sugestao = getSugestao(produto.codigo_item);
         const tr = document.createElement('tr');
         tr.className = `${!produto.acumulador ? 'table-warning' : ''}`;
+        tr.dataset.codigo = produto.codigo_item;
+
+        // Constrói a célula de acumulador com ou sem botões de aprovação
+        let acumuladorCell = `
+            <select class="form-select form-select-sm acumulador-select" 
+                    data-codigo="${produto.codigo_item}">
+                <option value="">Selecione...</option>
+                ${listaAcumuladores.map(a => `
+                    <option value="${a.codigo}" ${produto.acumulador === a.codigo ? 'selected' : ''}>
+                        ${a.codigo} - ${a.descricao}
+                    </option>
+                `).join('')}
+            </select>`;
+
+        // Se há sugestão pendente, adiciona botões de aprovação
+        if (sugestao && !produto.acumulador) {
+            acumuladorCell = `
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-info text-dark flex-grow-1">
+                        <i class="bi bi-lightbulb me-1"></i>${sugestao.acumulador_sugerido}
+                    </span>
+                    <button type="button" class="btn btn-sm btn-success" 
+                            onclick="aprovarSugestao('${produto.codigo_item}', '${sugestao.acumulador_sugerido}')"
+                            title="Aprovar sugestão">
+                        <i class="bi bi-check-lg"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-danger" 
+                            onclick="rejeitarSugestao('${produto.codigo_item}')"
+                            title="Rejeitar sugestão">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+                <small class="text-muted d-block mt-1">${sugestao.motivo}</small>`;
+        }
+
         tr.innerHTML = `
             <td class="text-center"><input class="form-check-input product-checkbox" type="checkbox" data-codigo="${produto.codigo_item}" ${isChecked ? 'checked' : ''}></td>
             <td>${produto.codigo_item}</td>
             <td>${produto.descricao_item}</td>
             <td>${produto.unidade}</td>
             <td>${produto.ncm}</td>
-            <td>
-                <select class="form-select form-select-sm acumulador-select" 
-                        data-codigo="${produto.codigo_item}">
-                    <option value="">Selecione...</option>
-                    ${listaAcumuladores.map(a => `
-                        <option value="${a.codigo}" ${produto.acumulador === a.codigo ? 'selected' : ''}>
-                            ${a.codigo} - ${a.descricao}
-                        </option>
-                    `).join('')}
-                </select>
-            </td>
+            <td>${acumuladorCell}</td>
         `;
         tbody.appendChild(tr);
     });
@@ -657,7 +692,7 @@ async function loadVendas(page = 1) {
 // Função simplificada para carregar relatório de vendas por acumulador
 function loadVendasReport() {
     const competencia = document.getElementById('competenciaFilter').value;
-    
+
     // Busca dados do servidor sem mostrar spinner (controlado pela syncCompetencias)
     return fetchApi(`/sped/relatorio_vendas?competencia=${competencia}`)
         .then(data => {
@@ -676,14 +711,14 @@ function renderVendasTable(data, errorMessage = null) {
     const table = document.getElementById('salesTable');
     const warning = document.getElementById('salesReportWarning');
     const warningText = document.getElementById('salesReportWarningText');
-    
+
     // Sempre mostra a tabela
     table.style.display = 'table';
     table.classList.remove('d-none');
-    
+
     // Esconde warning por padrão
     warning.classList.add('d-none');
-    
+
     // Se há erro, oculta a tabela e mostra warning
     if (errorMessage) {
         if (errorMessage.includes("produto(s) sem acumulador")) {
@@ -704,7 +739,7 @@ function renderVendasTable(data, errorMessage = null) {
         }
         return;
     }
-    
+
     // Se não há dados, mostra tabela vazia
     if (!data || !data.acumuladores || data.acumuladores.length === 0) {
         table.innerHTML = `
@@ -718,15 +753,15 @@ function renderVendasTable(data, errorMessage = null) {
         `;
         return;
     }
-    
+
     // Constrói corpo da tabela
     let bodyHtml = '';
-    
+
     data.acumuladores.forEach((acumulador, index) => {
         // Linha principal do acumulador
         const qtdVendas = acumulador.vendas_por_data.length;
         const rowClass = index % 2 === 0 ? 'table-light' : '';
-        
+
         bodyHtml += `
             <tr class="acumulador-row ${rowClass}">
                 <td>
@@ -741,7 +776,7 @@ function renderVendasTable(data, errorMessage = null) {
                 </td>
             </tr>
         `;
-        
+
         // Linhas de detalhes (inicialmente ocultas)
         const detailsBg = index % 2 === 0 ? 'bg-light' : 'bg-white';
         bodyHtml += `
@@ -763,7 +798,7 @@ function renderVendasTable(data, errorMessage = null) {
                                     </thead>
                                     <tbody>
         `;
-        
+
         acumulador.vendas_por_data.forEach(venda => {
             bodyHtml += `
                 <tr>
@@ -772,7 +807,7 @@ function renderVendasTable(data, errorMessage = null) {
                 </tr>
             `;
         });
-        
+
         bodyHtml += `
                                     </tbody>
                                 </table>
@@ -783,7 +818,7 @@ function renderVendasTable(data, errorMessage = null) {
             </tr>
         `;
     });
-    
+
     // Monta tabela completa
     table.innerHTML = `
         <thead class="table-dark">
@@ -803,7 +838,7 @@ function renderVendasTable(data, errorMessage = null) {
             </tr>
         </tfoot>
     `;
-    
+
     // Adiciona classes CSS para melhor visualização
     table.className = 'table table-hover table-bordered';
 }
@@ -812,7 +847,7 @@ function renderVendasTable(data, errorMessage = null) {
 function toggleDetalhes(index) {
     const detalhesRow = document.getElementById(`detalhes-${index}`);
     const button = document.querySelector(`button[onclick="toggleDetalhes(${index})"]`);
-    
+
     if (detalhesRow.classList.contains('d-none')) {
         // Mostrar detalhes
         detalhesRow.classList.remove('d-none');
@@ -831,10 +866,10 @@ function toggleDetalhes(index) {
 // Função para sincronizar competências entre todos os relatórios
 async function syncCompetencias(changedSelectId, newValue) {
     console.log(`Sincronizando competência: ${changedSelectId} = ${newValue}`);
-    
+
     // Mostra o overlay de carregamento e desabilita interações
     showCompetenciaLoading();
-    
+
     const competenciaSelects = [
         'competenciaVendasFilter',
         'competenciaFilter',
@@ -854,14 +889,14 @@ async function syncCompetencias(changedSelectId, newValue) {
     try {
         // Desabilita o spinner automático para evitar conflitos
         autoSpinnerEnabled = false;
-        
+
         // Recarrega todos os relatórios com a nova competência
         await Promise.all([
             loadVendas(),
             loadVendasReport(),
             loadCfopReport()
         ]);
-        
+
         // Esconde o overlay quando todos os relatórios terminarem de carregar
         hideCompetenciaLoading();
     } catch (error) {
@@ -895,23 +930,23 @@ function hideCompetenciaLoading() {
 
 function resetCfopTableState(cfopTable, warningDiv) {
     console.log('Resetando estado da tabela CFOP...');
-    
+
     // Remove todos os estilos inline que podem estar ocultando a tabela
     cfopTable.style.display = 'table';
     cfopTable.style.visibility = 'visible';
-    
+
     // Remove classes que ocultam a tabela
     cfopTable.classList.remove('d-none');
-    
+
     // Oculta o aviso
     warningDiv.classList.add('d-none');
-    
+
     // Limpa o conteúdo da tabela
     const tbody = document.getElementById('cfopBody');
     const tfoot = cfopTable.querySelector('tfoot');
     if (tbody) tbody.innerHTML = '';
     if (tfoot) tfoot.innerHTML = '';
-    
+
     console.log('Estado da tabela CFOP resetado');
 }
 
@@ -919,7 +954,7 @@ async function loadCfopReport() {
     console.log('=== loadCfopReport chamada ===');
     const competencia = document.getElementById('competenciaCfopFilter').value;
     console.log('Competência selecionada:', competencia);
-    
+
     const cfopTable = document.getElementById('cfopTable');
     const warningDiv = document.getElementById('cfopReportWarning');
     const warningText = document.getElementById('cfopReportWarningText');
@@ -932,7 +967,7 @@ async function loadCfopReport() {
         const timestamp = new Date().getTime();
         const url = `/sped/relatorio_cfop?competencia=${competencia}&_t=${timestamp}`;
         console.log('URL da requisição:', url);
-        
+
         const data = await fetchApi(url);
         console.log('Dados recebidos do relatório CFOP:', data);
 
@@ -974,7 +1009,7 @@ async function loadCfopReport() {
 
     } catch (error) {
         console.error('Erro ao carregar relatório CFOP:', error);
-        
+
         if (error.message.includes("produto(s) sem acumulador")) {
             console.log('Erro: produtos sem acumulador detectados');
             cfopTable.style.display = 'none';
@@ -1007,7 +1042,7 @@ async function loadCompetencias() {
         // Preenche todos os selects de competência
         const selects = [
             'competenciaVendasFilter',
-            'competenciaFilter', 
+            'competenciaFilter',
             'competenciaCfopFilter'
         ];
 
@@ -1048,7 +1083,7 @@ async function loadAllReports() {
         ]);
     } catch (error) {
         console.error('Erro ao carregar relatórios:', error);
-        
+
         // Em caso de erro, inicializa todas as abas com mensagem padrão
         initializeAllReportsWithMessage();
     }
@@ -1074,7 +1109,7 @@ function initializeAllReportsWithMessage() {
             vendasTable.classList.remove('d-none');
         }
     }
-    
+
     // Inicializa aba de CFOP
     const cfopBody = document.getElementById('cfopBody');
     if (cfopBody) {
@@ -1084,7 +1119,7 @@ function initializeAllReportsWithMessage() {
             cfopTable.classList.remove('d-none');
         }
     }
-    
+
     // Inicializa aba de acumulador
     renderVendasTable(null);
 }
@@ -1414,25 +1449,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Listener para importação de arquivo SPED
     const submitSpedButton = document.getElementById('submitSped');
     if (submitSpedButton) {
-        submitSpedButton.addEventListener('click', async function() {
+        submitSpedButton.addEventListener('click', async function () {
             const fileInput = document.getElementById('arquivo_sped');
             if (!fileInput.files.length) {
                 showToast('Por favor, selecione um arquivo SPED.', 'warning');
                 return;
             }
-            
+
             showSpinner();
             try {
                 const formData = new FormData();
                 formData.append('arquivo_sped', fileInput.files[0]);
 
-                const response = await fetch('/sped/importar', { 
-                    method: 'POST', 
+                const response = await fetch('/sped/importar', {
+                    method: 'POST',
                     body: formData
                 });
-                
+
                 const data = await response.json();
-                
+
                 showToast(data.message || data.error, data.success ? 'success' : 'danger');
                 if (data.success) {
                     console.log('Importação bem-sucedida, recarregando todos os dados...');
@@ -1442,7 +1477,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         loadProdutos(1),
                         loadAcumuladores()
                     ]);
-                    
+
                     // Força a atualização de todos os relatórios após um pequeno delay
                     setTimeout(async () => {
                         console.log('Forçando atualização dos relatórios...');
@@ -1491,27 +1526,27 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 
-    // Listeners com sincronização de competências
-    const competenciaFilter = document.getElementById('competenciaFilter');
-    if (competenciaFilter) {
-        competenciaFilter.addEventListener('change', () => {
-            syncCompetencias('competenciaFilter', competenciaFilter.value);
-        });
-    }
+// Listeners com sincronização de competências
+const competenciaFilter = document.getElementById('competenciaFilter');
+if (competenciaFilter) {
+    competenciaFilter.addEventListener('change', () => {
+        syncCompetencias('competenciaFilter', competenciaFilter.value);
+    });
+}
 
-    const competenciaCfopFilter = document.getElementById('competenciaCfopFilter');
-    if (competenciaCfopFilter) {
-        competenciaCfopFilter.addEventListener('change', () => {
-            syncCompetencias('competenciaCfopFilter', competenciaCfopFilter.value);
-        });
-    }
+const competenciaCfopFilter = document.getElementById('competenciaCfopFilter');
+if (competenciaCfopFilter) {
+    competenciaCfopFilter.addEventListener('change', () => {
+        syncCompetencias('competenciaCfopFilter', competenciaCfopFilter.value);
+    });
+}
 
-    const competenciaVendasFilter = document.getElementById('competenciaVendasFilter');
-    if (competenciaVendasFilter) {
-        competenciaVendasFilter.addEventListener('change', () => {
-            syncCompetencias('competenciaVendasFilter', competenciaVendasFilter.value);
-        });
-    }
+const competenciaVendasFilter = document.getElementById('competenciaVendasFilter');
+if (competenciaVendasFilter) {
+    competenciaVendasFilter.addEventListener('change', () => {
+        syncCompetencias('competenciaVendasFilter', competenciaVendasFilter.value);
+    });
+}
 
 // CORREÇÃO: Monitora a visibilidade da tabela de CFOP
 function startCfopTableMonitoring() {
@@ -1534,4 +1569,447 @@ function startCfopTableMonitoring() {
 // Inicia o monitoramento quando o DOM estiver carregado
 document.addEventListener('DOMContentLoaded', () => {
     startCfopTableMonitoring();
+
+    // Handler para botão de classificação automática
+    const btnClassificarAuto = document.getElementById('btnClassificarAuto');
+    if (btnClassificarAuto) {
+        btnClassificarAuto.addEventListener('click', () => abrirModalClassificacao());
+    }
+
+    // Handler para aprovar todas as sugestões
+    const btnAprovarTodas = document.getElementById('btnAprovarTodas');
+    if (btnAprovarTodas) {
+        btnAprovarTodas.addEventListener('click', () => aprovarTodasSugestoes());
+    }
 });
+
+// Função para abrir modal de classificação automática
+async function abrirModalClassificacao() {
+    const modal = new bootstrap.Modal(document.getElementById('classificacaoAutoModal'));
+    const loadingDiv = document.getElementById('classificacaoLoading');
+    const resultadoDiv = document.getElementById('classificacaoResultado');
+    const alertaDiv = document.getElementById('classificacaoAlerta');
+    const contadorSpan = document.getElementById('classificacaoContador');
+    const tbody = document.getElementById('classificacaoBody');
+
+    // Reset estado
+    loadingDiv.classList.remove('d-none');
+    resultadoDiv.classList.add('d-none');
+    alertaDiv.classList.add('d-none');
+    tbody.innerHTML = '';
+
+    modal.show();
+
+    try {
+        const response = await fetch('/sped/classificar_produtos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({})
+        });
+
+        const result = await response.json();
+
+        loadingDiv.classList.add('d-none');
+        resultadoDiv.classList.remove('d-none');
+
+        if (result.success) {
+            if (!result.sugestoes || result.sugestoes.length === 0) {
+                alertaDiv.className = 'alert alert-info';
+                alertaDiv.innerHTML = '<i class="bi bi-info-circle me-2"></i>Nenhuma sugestão encontrada. Cadastre mais produtos com acumuladores para criar uma base de referência.';
+                alertaDiv.classList.remove('d-none');
+                contadorSpan.textContent = '';
+                document.getElementById('btnAprovarTodas').classList.add('d-none');
+            } else {
+                // Armazena sugestões globalmente
+                window.sugestoesPendentes = result.sugestoes;
+
+                alertaDiv.className = 'alert alert-success';
+                alertaDiv.innerHTML = `<i class="bi bi-check-circle me-2"></i>Encontradas <strong>${result.total_sugestoes}</strong> sugestões de classificação.`;
+                alertaDiv.classList.remove('d-none');
+                contadorSpan.textContent = `${result.sugestoes.length} produtos`;
+                document.getElementById('btnAprovarTodas').classList.remove('d-none');
+
+                // Preenche a tabela do modal
+                renderizarTabelaClassificacao();
+
+                // Atualiza a tabela de produtos principal para mostrar os ícones
+                loadProdutos(currentPage);
+            }
+        } else {
+            alertaDiv.className = 'alert alert-danger';
+            alertaDiv.innerHTML = `<i class="bi bi-x-circle me-2"></i>Erro: ${result.error}`;
+            alertaDiv.classList.remove('d-none');
+        }
+    } catch (error) {
+        loadingDiv.classList.add('d-none');
+        resultadoDiv.classList.remove('d-none');
+        alertaDiv.className = 'alert alert-danger';
+        alertaDiv.innerHTML = `<i class="bi bi-x-circle me-2"></i>Erro ao analisar: ${error.message}`;
+        alertaDiv.classList.remove('d-none');
+    }
+}
+
+// Renderiza a tabela de sugestões no modal
+function renderizarTabelaClassificacao() {
+    const tbody = document.getElementById('classificacaoBody');
+    tbody.innerHTML = '';
+
+    window.sugestoesPendentes.forEach(sug => {
+        const tr = document.createElement('tr');
+        tr.id = `sug-${sug.codigo_item}`;
+        tr.className = 'table-warning';
+        tr.innerHTML = `
+            <td>${sug.codigo_item}</td>
+            <td>${sug.descricao}</td>
+            <td>${sug.ncm || '-'}</td>
+            <td>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-secondary">Vazio</span>
+                    <i class="bi bi-arrow-right text-muted"></i>
+                    <span class="badge bg-info text-dark">
+                        <i class="bi bi-lightbulb me-1"></i>${sug.acumulador_sugerido}
+                    </span>
+                </div>
+                <small class="text-muted d-block mt-1">${sug.motivo}</small>
+            </td>
+            <td>
+                <div class="d-flex gap-1 justify-content-center">
+                    <button type="button" class="btn btn-sm btn-success" 
+                            onclick="aprovarSugestaoModal('${sug.codigo_item}', '${sug.acumulador_sugerido}')"
+                            title="Aprovar">
+                        <i class="bi bi-check-lg"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-danger" 
+                            onclick="rejeitarSugestaoModal('${sug.codigo_item}')"
+                            title="Rejeitar">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    atualizarContadorModal();
+}
+
+// Aprovar sugestão no modal
+async function aprovarSugestaoModal(codigoItem, acumulador) {
+    try {
+        const response = await fetch('/sped/aprovar_sugestao', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ codigo_item: codigoItem, acumulador: acumulador })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            // Remove da lista e da tabela
+            window.sugestoesPendentes = window.sugestoesPendentes.filter(s => s.codigo_item !== codigoItem);
+            const row = document.getElementById(`sug-${codigoItem}`);
+            if (row) row.remove();
+            atualizarContadorModal();
+        } else {
+            showToast(result.error, 'danger');
+        }
+    } catch (error) {
+        showToast('Erro ao aprovar: ' + error.message, 'danger');
+    }
+}
+
+// Rejeitar sugestão no modal
+function rejeitarSugestaoModal(codigoItem) {
+    window.sugestoesPendentes = window.sugestoesPendentes.filter(s => s.codigo_item !== codigoItem);
+    const row = document.getElementById(`sug-${codigoItem}`);
+    if (row) row.remove();
+    atualizarContadorModal();
+}
+
+// Aprovar todas as sugestões
+async function aprovarTodasSugestoes() {
+    const sugestoes = [...window.sugestoesPendentes];
+    let aprovadas = 0;
+
+    for (const sug of sugestoes) {
+        try {
+            const response = await fetch('/sped/aprovar_sugestao', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ codigo_item: sug.codigo_item, acumulador: sug.acumulador_sugerido })
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                aprovadas++;
+                window.sugestoesPendentes = window.sugestoesPendentes.filter(s => s.codigo_item !== sug.codigo_item);
+            }
+        } catch (error) {
+            console.error('Erro ao aprovar:', sug.codigo_item, error);
+        }
+    }
+
+    showToast(`${aprovadas} produtos classificados com sucesso!`, 'success');
+    renderizarTabelaClassificacao();
+
+    // Recarrega produtos quando o modal fechar
+    await loadProdutos(1);
+}
+
+// Atualiza contador no modal
+function atualizarContadorModal() {
+    const contadorSpan = document.getElementById('classificacaoContador');
+    const alertaDiv = document.getElementById('classificacaoAlerta');
+    const btnAprovarTodas = document.getElementById('btnAprovarTodas');
+
+    if (window.sugestoesPendentes.length === 0) {
+        contadorSpan.textContent = 'Todas as sugestões processadas';
+        alertaDiv.className = 'alert alert-info';
+        alertaDiv.innerHTML = '<i class="bi bi-check-circle me-2"></i>Todas as sugestões foram processadas!';
+        btnAprovarTodas.classList.add('d-none');
+    } else {
+        contadorSpan.textContent = `${window.sugestoesPendentes.length} produtos pendentes`;
+    }
+}
+
+// Variável global para sugestões pendentes
+window.sugestoesPendentes = [];
+
+// Função para verificar se há sugestão para um produto
+function getSugestao(codigoItem) {
+    return window.sugestoesPendentes.find(s => s.codigo_item === codigoItem);
+}
+
+// Função para aprovar sugestão
+async function aprovarSugestao(codigoItem, acumulador) {
+    try {
+        const response = await fetch('/sped/aprovar_sugestao', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ codigo_item: codigoItem, acumulador: acumulador })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            // Remove a sugestão da lista de pendentes
+            window.sugestoesPendentes = window.sugestoesPendentes.filter(s => s.codigo_item !== codigoItem);
+            atualizarBotaoClassificar();
+
+            // Atualiza apenas a linha localmente ao invés de recarregar toda a tabela
+            const row = document.querySelector(`tr[data-codigo="${codigoItem}"]`);
+            if (row) {
+                // Remove o destaque de aviso
+                row.classList.remove('table-warning');
+
+                // Substitui o conteúdo da célula de acumulador pelo select padrão
+                const acumuladorCell = row.querySelector('td:last-child');
+                if (acumuladorCell) {
+                    acumuladorCell.innerHTML = `
+                        <select class="form-select form-select-sm acumulador-select" 
+                                data-codigo="${codigoItem}">
+                            <option value="">Selecione...</option>
+                            ${listaAcumuladores.map(a => `
+                                <option value="${a.codigo}" ${acumulador === a.codigo ? 'selected' : ''}>
+                                    ${a.codigo} - ${a.descricao}
+                                </option>
+                            `).join('')}
+                        </select>`;
+                }
+            }
+
+            // Recarrega os relatórios
+            await Promise.all([
+                loadVendasReport(),
+                loadCfopReport()
+            ]);
+        } else {
+            showToast(result.error, 'danger');
+        }
+    } catch (error) {
+        showToast('Erro ao aprovar: ' + error.message, 'danger');
+    }
+}
+
+// Função para rejeitar sugestão
+function rejeitarSugestao(codigoItem) {
+    window.sugestoesPendentes = window.sugestoesPendentes.filter(s => s.codigo_item !== codigoItem);
+    showToast(`✗ Sugestão rejeitada`, 'warning');
+    atualizarBotaoClassificar();
+    loadProdutos(currentPage);
+}
+
+// Atualiza o botão de classificar
+function atualizarBotaoClassificar() {
+    const btn = document.getElementById('btnClassificarAuto');
+    if (btn) {
+        if (window.sugestoesPendentes && window.sugestoesPendentes.length > 0) {
+            btn.innerHTML = `<i class="bi bi-magic me-2"></i>Pendentes (${window.sugestoesPendentes.length})`;
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-warning');
+        } else {
+            btn.innerHTML = '<i class="bi bi-magic me-2"></i>Classificar Automático';
+            btn.classList.remove('btn-warning');
+            btn.classList.add('btn-success');
+        }
+    }
+}
+
+// Função para analisar inconsistências
+async function analisarInconsistencias() {
+    const modal = new bootstrap.Modal(document.getElementById('inconsistenciasModal'));
+    const loadingDiv = document.getElementById('inconsistenciasLoading');
+    const resultadoDiv = document.getElementById('inconsistenciasResultado');
+    const alertaDiv = document.getElementById('inconsistenciasAlerta');
+    const tbody = document.getElementById('inconsistenciasBody');
+
+    // Reset estado
+    loadingDiv.classList.remove('d-none');
+    resultadoDiv.classList.add('d-none');
+    alertaDiv.classList.add('d-none');
+    tbody.innerHTML = '';
+
+    modal.show();
+
+    try {
+        const response = await fetch('/sped/analisar_inconsistencias');
+        const result = await response.json();
+
+        loadingDiv.classList.add('d-none');
+        resultadoDiv.classList.remove('d-none');
+
+        if (result.success) {
+            if (result.total === 0) {
+                alertaDiv.className = 'alert alert-success';
+                alertaDiv.innerHTML = '<i class="bi bi-check-circle me-2"></i>Nenhuma inconsistência encontrada! Todos os produtos similares possuem o mesmo acumulador.';
+                alertaDiv.classList.remove('d-none');
+            } else {
+                alertaDiv.className = 'alert alert-warning';
+                alertaDiv.innerHTML = `<i class="bi bi-exclamation-triangle me-2"></i>Encontradas <strong>${result.total}</strong> possíveis inconsistências.`;
+                alertaDiv.classList.remove('d-none');
+
+                // Atualiza contador
+                const contadorSpan = document.getElementById('inconsistenciasContador');
+                if (contadorSpan) {
+                    contadorSpan.textContent = `${result.total} produtos com inconsistência`;
+                }
+
+                // Preenche a tabela - mostra apenas o produto que precisa ser corrigido
+                result.inconsistencias.forEach((inc, index) => {
+                    // Mostra o produto 2 com sugestão de usar o acumulador do produto 1
+                    const tr = document.createElement('tr');
+                    tr.className = 'table-warning';
+                    tr.id = `inc-${index}`;
+                    tr.innerHTML = `
+                        <td>${inc.produto2_codigo}</td>
+                        <td>${inc.produto2_descricao}</td>
+                        <td>${inc.produto2_ncm || '-'}</td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-danger">${inc.produto2_acumulador}</span>
+                                <i class="bi bi-arrow-right text-muted"></i>
+                                <span class="badge bg-info text-dark">
+                                    <i class="bi bi-lightbulb me-1"></i>${inc.produto1_acumulador}
+                                </span>
+                            </div>
+                            <small class="text-muted d-block mt-1">${inc.similaridade}% similar a "${inc.produto1_descricao.substring(0, 30)}..."</small>
+                        </td>
+                        <td>
+                            <div class="d-flex gap-1 justify-content-center">
+                                <button type="button" class="btn btn-sm btn-success" 
+                                        onclick="trocarAcumuladorInconsistencia('${inc.produto2_codigo}', '${inc.produto1_acumulador}', ${index})"
+                                        title="Usar ${inc.produto1_acumulador}">
+                                    <i class="bi bi-check-lg"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-danger" 
+                                        onclick="ignorarInconsistencia(${index})"
+                                        title="Ignorar">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+        } else {
+            alertaDiv.className = 'alert alert-danger';
+            alertaDiv.innerHTML = `<i class="bi bi-x-circle me-2"></i>Erro ao analisar: ${result.error}`;
+            alertaDiv.classList.remove('d-none');
+        }
+    } catch (error) {
+        loadingDiv.classList.add('d-none');
+        resultadoDiv.classList.remove('d-none');
+        alertaDiv.className = 'alert alert-danger';
+        alertaDiv.innerHTML = `<i class="bi bi-x-circle me-2"></i>Erro ao analisar: ${error.message}`;
+        alertaDiv.classList.remove('d-none');
+    }
+}
+
+// Handler para o botão de análise de inconsistências
+document.addEventListener('DOMContentLoaded', () => {
+    const btnInconsistencias = document.getElementById('btnAnalisarInconsistencias');
+    if (btnInconsistencias) {
+        btnInconsistencias.addEventListener('click', analisarInconsistencias);
+    }
+});
+
+// Função para trocar acumulador de um produto (usado no modal de inconsistências)
+async function trocarAcumuladorInconsistencia(codigoProduto, novoAcumulador, index) {
+    try {
+        const response = await fetch('/sped/produtos/atualizar_acumulador', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ codigo: codigoProduto, acumulador: novoAcumulador })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            // Remove a linha da inconsistência
+            const tr = document.getElementById(`inc-${index}`);
+            if (tr) tr.remove();
+
+            // Atualiza contador
+            const contadorSpan = document.getElementById('inconsistenciasContador');
+            const tbody = document.getElementById('inconsistenciasBody');
+            const linhasRestantes = tbody.querySelectorAll('tr.table-warning').length;
+
+            if (linhasRestantes === 0) {
+                const alertaDiv = document.getElementById('inconsistenciasAlerta');
+                alertaDiv.className = 'alert alert-success';
+                alertaDiv.innerHTML = '<i class="bi bi-check-circle me-2"></i>Todas as inconsistências foram resolvidas!';
+                contadorSpan.textContent = '';
+            } else {
+                contadorSpan.textContent = `${linhasRestantes} produtos restantes`;
+            }
+
+            showToast(`Acumulador de ${codigoProduto} alterado para ${novoAcumulador}`, 'success');
+        } else {
+            showToast(result.error || 'Erro ao atualizar', 'danger');
+        }
+    } catch (error) {
+        showToast('Erro ao trocar acumulador: ' + error.message, 'danger');
+    }
+}
+
+// Função para ignorar uma inconsistência (remove da lista sem alterar)
+function ignorarInconsistencia(index) {
+    // Remove a linha da inconsistência
+    const tr = document.getElementById(`inc-${index}`);
+    if (tr) tr.remove();
+
+    // Atualiza contador
+    const contadorSpan = document.getElementById('inconsistenciasContador');
+    const tbody = document.getElementById('inconsistenciasBody');
+    const linhasRestantes = tbody.querySelectorAll('tr.table-warning').length;
+
+    if (linhasRestantes === 0) {
+        const alertaDiv = document.getElementById('inconsistenciasAlerta');
+        alertaDiv.className = 'alert alert-success';
+        alertaDiv.innerHTML = '<i class="bi bi-check-circle me-2"></i>Todas as inconsistências foram processadas!';
+        contadorSpan.textContent = '';
+    } else {
+        contadorSpan.textContent = `${linhasRestantes} produtos restantes`;
+    }
+}

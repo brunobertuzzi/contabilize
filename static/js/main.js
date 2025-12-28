@@ -53,7 +53,7 @@ function showConfirmModal(message, onConfirm) {
 
     const modalElement = document.getElementById('genericConfirmModal');
     const confirmModal = new bootstrap.Modal(modalElement);
-    
+
     const confirmBtn = document.getElementById('genericConfirmBtn');
     const cancelBtn = document.getElementById('genericCancelBtn');
 
