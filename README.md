@@ -55,6 +55,7 @@ contabilize/
 │   ├── database.py        # Modelos e conexão do banco
 │   ├── sped.py            # Rotas e lógica SPED
 │   ├── sped_service.py    # Serviços de processamento SPED
+│   ├── empresa_service.py # Serviços de gestão de empresas
 │   ├── product_analyzer.py# Análise de produtos por similaridade
 │   ├── user_management.py # Sistema de gestão de usuários
 │   ├── backup_restore.py  # Sistema de backup
@@ -73,6 +74,7 @@ contabilize/
 ├── static/                # Arquivos estáticos
 │   ├── js/                # Scripts JavaScript
 │   └── css/               # Estilos CSS
+├── database/              # Banco de dados SQLite
 ├── uploads/               # Uploads de arquivos
 ├── backups/               # Backups do sistema
 └── logs/                  # Logs da aplicação

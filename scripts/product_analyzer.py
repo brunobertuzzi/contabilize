@@ -8,13 +8,9 @@ similaridade com produtos já cadastrados no banco de dados.
 
 import difflib
 import logging
-import os
 import re
-import sys
 from types import SimpleNamespace
 from typing import Dict, List, Optional, Tuple
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from scripts.database import Acumulador, ProdutoSped, get_db
 
@@ -51,7 +47,7 @@ class ProductAnalyzer:
 
         melhor_score = 0
         melhor_acumulador = None
-        match_desc = ""
+        descricao_produto_similar = ""
 
         # Normaliza descrição e NCM do produto alvo
         produto_desc = produto_desc.upper()
@@ -90,7 +86,7 @@ class ProductAnalyzer:
             if score > melhor_score:
                 melhor_score = score
                 melhor_acumulador = ref_acum
-                match_desc = ref_desc
+                descricao_produto_similar = ref_desc
 
         # Threshold ajustado (considerando que NCM pode ter subido o score)
         # Se NCM bateu (boost 0.3), precisa de apenas 0.3 de texto (muito pouco)
@@ -101,7 +97,7 @@ class ProductAnalyzer:
             score_display = min(melhor_score, 1.0)
             return (
                 melhor_acumulador,
-                f"Similaridade ({int(score_display * 100)}%) com: {match_desc}",
+                f"Similaridade ({int(score_display * 100)}%) com: {descricao_produto_similar}",
             )
 
         return None
@@ -115,10 +111,7 @@ class ProductAnalyzer:
                 # 1. Busca produtos sem acumulador
                 produtos = (
                     db.query(ProdutoSped)
-                    .filter(
-                        (ProdutoSped.acumulador == None)
-                        | (ProdutoSped.acumulador == "")
-                    )
+                    .filter(ProdutoSped.acumulador_id.is_(None))
                     .limit(limite)
                     .all()
                 )
@@ -129,22 +122,21 @@ class ProductAnalyzer:
                 # 2. Busca base de referência (produtos JÁ classificados)
                 # Adiciona NCM na query
                 produtos_referencia = (
-                    db.query(
-                        ProdutoSped.descricao_item,
-                        ProdutoSped.ncm,
-                        ProdutoSped.acumulador,
-                    )
-                    .filter(
-                        ProdutoSped.acumulador != None, ProdutoSped.acumulador != ""
-                    )
+                    db.query(ProdutoSped)
+                    .filter(ProdutoSped.acumulador_id.isnot(None))
                     .limit(2000)
                     .all()
                 )
 
                 # Prepara lista de referências normalizada: (desc, ncm, acum)
                 refs = [
-                    (p.descricao_item.upper(), p.ncm, p.acumulador)
+                    (
+                        p.descricao_item.upper(),
+                        p.ncm,
+                        p.acumulador_rel.codigo if p.acumulador_rel else None,
+                    )
                     for p in produtos_referencia
+                    if p.acumulador_rel
                 ]
 
                 logger.info(
@@ -189,20 +181,19 @@ class ProductAnalyzer:
         try:
             with get_db() as db:
                 produtos_referencia = (
-                    db.query(
-                        ProdutoSped.descricao_item,
-                        ProdutoSped.ncm,
-                        ProdutoSped.acumulador,
-                    )
-                    .filter(
-                        ProdutoSped.acumulador != None, ProdutoSped.acumulador != ""
-                    )
+                    db.query(ProdutoSped)
+                    .filter(ProdutoSped.acumulador_id.isnot(None))
                     .limit(2000)
                     .all()
                 )
                 refs = [
-                    (p.descricao_item.upper(), p.ncm, p.acumulador)
+                    (
+                        p.descricao_item.upper(),
+                        p.ncm,
+                        p.acumulador_rel.codigo if p.acumulador_rel else None,
+                    )
                     for p in produtos_referencia
+                    if p.acumulador_rel
                 ]
 
                 if not refs:
@@ -231,9 +222,7 @@ class ProductAnalyzer:
                 # Busca produtos que já têm acumulador
                 produtos = (
                     db.query(ProdutoSped)
-                    .filter(
-                        ProdutoSped.acumulador != None, ProdutoSped.acumulador != ""
-                    )
+                    .filter(ProdutoSped.acumulador_id.isnot(None))
                     .limit(2000)
                     .all()
                 )
@@ -257,7 +246,9 @@ class ProductAnalyzer:
                             "descricao_norm": p.descricao_item.upper().strip(),
                             "ncm": p.ncm,
                             "ncm_norm": ncm_norm,
-                            "acumulador": p.acumulador,
+                            "acumulador": p.acumulador_rel.codigo
+                            if p.acumulador_rel
+                            else None,
                         }
                     )
 

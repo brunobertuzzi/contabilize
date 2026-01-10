@@ -1,7 +1,9 @@
-from flask import Blueprint, current_app, jsonify, render_template, request
+from flask import Blueprint, current_app, jsonify, render_template, request, session
 from flask_login import login_required
 
-from .product_analyzer import ProductAnalyzer  # Import movido para o topo
+from .database import Empresa, get_db
+from .empresa_service import get_empresa_id_from_session
+from .product_analyzer import ProductAnalyzer
 from .security_middleware import secure_api_endpoint
 from .sped_service import SpedService
 
@@ -13,24 +15,48 @@ sped_bp = Blueprint("sped", __name__)
 def sped_index():
     """Renderiza a página principal do SPED, pré-carregando dados necessários."""
     try:
-        acumuladores = SpedService.get_acumuladores()
-        cfops = SpedService.get_cfops()
+        empresa_id = get_empresa_id_from_session()
+        acumuladores = SpedService.get_acumuladores(empresa_id=empresa_id)
+        cfops = SpedService.get_cfops(empresa_id=empresa_id)
+
+        # Buscar todas as empresas
+        with get_db() as db:
+            empresas = db.query(Empresa).order_by(Empresa.razao_social).all()
+            empresas_list = [{"id": e.id, "cnpj": e.cnpj, "razao_social": e.razao_social} for e in empresas]
+
+        empresa_selecionada = None
+        if empresa_id:
+            with get_db() as db:
+                empresa = db.get(Empresa, empresa_id)
+                if empresa:
+                    empresa_selecionada = {
+                        "id": empresa.id,
+                        "cnpj": empresa.cnpj,
+                        "razao_social": empresa.razao_social,
+                    }
+
         return render_template(
-            "sped.html", acumuladores=acumuladores, cfops=cfops, active_page="sped"
+            "sped.html",
+            acumuladores=acumuladores,
+            cfops=cfops,
+            empresas=empresas_list,
+            empresa_selecionada=empresa_selecionada,
+            active_page="sped",
         )
     except Exception as e:
         current_app.logger.error(f"Erro ao carregar a página SPED: {e}")
-        return render_template(
-            "error.html",
-            error_message="Não foi possível carregar os dados da página SPED.",
-        ), 500
+        return (
+            render_template(
+                "error.html",
+                error_message="Não foi possível carregar os dados da página SPED.",
+            ),
+            500,
+        )
 
 
 @sped_bp.route("/importar", methods=["POST"])
 @login_required
-@secure_api_endpoint(
-    max_requests=10, window_minutes=5
-)  # Limite mais restritivo para upload
+@secure_api_endpoint(max_requests=10, window_minutes=5)  # Limite mais restritivo para upload
 def importar_sped():
     current_app.logger.debug("Iniciando importação do arquivo SPED")
 
@@ -47,19 +73,18 @@ def importar_sped():
 
     # Validação de extensão do arquivo
     allowed_extensions = {".txt", ".sped", ".efd"}
-    file_ext = (
-        "." + file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else ""
-    )
+    file_ext = "." + file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else ""
     if file_ext not in allowed_extensions:
-        current_app.logger.warning(
-            f"SECURITY: Tentativa de upload com extensão não permitida: {file.filename}"
+        current_app.logger.warning(f"SEGURANÇA: Tentativa de upload com extensão não permitida: {file.filename}")
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": "Tipo de arquivo não permitido. Use .txt, .sped ou .efd",
+                }
+            ),
+            400,
         )
-        return jsonify(
-            {
-                "success": False,
-                "error": "Tipo de arquivo não permitido. Use .txt, .sped ou .efd",
-            }
-        ), 400
 
     # Validação de tamanho (50MB máximo para arquivos SPED)
     max_sped_size = 50 * 1024 * 1024
@@ -67,24 +92,27 @@ def importar_sped():
     file_size = file.tell()
     file.seek(0)  # Volta para o início
     if file_size > max_sped_size:
-        return jsonify(
-            {"success": False, "error": "Arquivo muito grande. Máximo: 50MB"}
-        ), 400
+        return jsonify({"success": False, "error": "Arquivo muito grande. Máximo: 50MB"}), 400
 
     try:
         current_app.logger.debug("Iniciando processamento do arquivo")
-        success, message = SpedService.import_sped_file(file)
+        # Obtém o ID da empresa selecionada na sessão
+        empresa_selecionada_id = get_empresa_id_from_session()
+        success, message, empresa_id = SpedService.import_sped_file(file, empresa_selecionada_id)
         if success:
+            if empresa_id:
+                # Atualizar a sessão com a empresa importada
+                session["empresa_id"] = empresa_id
+                current_app.logger.info(f"Sessão atualizada para empresa ID: {empresa_id}")
+
             current_app.logger.info(f"Arquivo SPED importado com sucesso: {message}")
-            return jsonify({"success": True, "message": message})
+            return jsonify({"success": True, "message": message, "empresa_id": empresa_id})
         else:
             current_app.logger.error(f"Falha ao importar arquivo SPED: {message}")
-            return jsonify({"success": False, "error": message}), 500
+            return jsonify({"success": False, "error": message}), 400
     except Exception as e:
         current_app.logger.exception("Erro durante importação do arquivo SPED")
-        return jsonify(
-            {"success": False, "error": "Erro interno durante a importação."}
-        ), 500
+        return jsonify({"success": False, "error": "Erro interno durante a importação."}), 500
 
 
 # Rotas para Acumuladores
@@ -92,8 +120,11 @@ def importar_sped():
 @login_required
 def get_acumuladores():
     try:
+        empresa_id = get_empresa_id_from_session()
+        if not empresa_id:
+            return jsonify([])  # Retorna lista vazia se não houver empresa
         search_term = request.args.get("search")
-        acumuladores = SpedService.get_acumuladores(search_term=search_term)
+        acumuladores = SpedService.get_acumuladores(search_term=search_term, empresa_id=empresa_id)
         return jsonify(acumuladores)
     except Exception as e:
         current_app.logger.error(f"Erro ao buscar acumuladores: {e}")
@@ -105,21 +136,23 @@ def get_acumuladores():
 @secure_api_endpoint(max_requests=30, window_minutes=1)
 def add_acumulador():
     try:
+        empresa_id = get_empresa_id_from_session()
+        if not empresa_id:
+            return jsonify({"success": False, "error": "Selecione uma empresa antes de cadastrar acumuladores"}), 400
+
         data = request.get_json()
         if not data:
             return jsonify({"success": False, "error": "Dados inválidos"}), 400
 
         success, message_or_error = SpedService.add_acumulador(
-            data.get("codigo"), data.get("descricao"), data.get("cfop")
+            data.get("codigo"), data.get("descricao"), data.get("cfop"), empresa_id=empresa_id
         )
         if success:
             return jsonify({"success": True, "message": message_or_error}), 201
         return jsonify({"success": False, "error": message_or_error}), 400
     except Exception as e:
         current_app.logger.error(f"Erro ao adicionar acumulador: {e}")
-        return jsonify(
-            {"success": False, "error": "Erro ao processar a requisição"}
-        ), 500
+        return jsonify({"success": False, "error": "Erro ao processar a requisição"}), 500
 
 
 @sped_bp.route("/acumuladores/<codigo>", methods=["GET"])
@@ -136,9 +169,7 @@ def get_acumulador(codigo):
 @login_required
 def update_acumulador(codigo):
     data = request.get_json()
-    success, message_or_error = SpedService.update_acumulador(
-        codigo, data.get("descricao"), data.get("cfop")
-    )
+    success, message_or_error = SpedService.update_acumulador(codigo, data.get("descricao"), data.get("cfop"))
     if success:
         return jsonify({"success": True, "message": message_or_error})
     return jsonify({"success": False, "error": message_or_error}), 400
@@ -158,8 +189,11 @@ def delete_acumulador(codigo):
 @login_required
 def get_cfops():
     try:
+        empresa_id = get_empresa_id_from_session()
+        if not empresa_id:
+            return jsonify([])  # Retorna lista vazia se não houver empresa
         search_term = request.args.get("search")
-        cfops = SpedService.get_cfops(search_term=search_term)
+        cfops = SpedService.get_cfops(search_term=search_term, empresa_id=empresa_id)
         return jsonify(cfops)
     except Exception as e:
         current_app.logger.error(f"Erro ao buscar CFOPs: {e}")
@@ -171,19 +205,21 @@ def get_cfops():
 @secure_api_endpoint(max_requests=30, window_minutes=1)
 def add_cfop():
     try:
+        empresa_id = get_empresa_id_from_session()
+        if not empresa_id:
+            return jsonify({"success": False, "error": "Selecione uma empresa antes de cadastrar CFOPs"}), 400
+
         data = request.get_json()
         if not data:
             return jsonify({"success": False, "error": "Dados inválidos"}), 400
 
-        success, message_or_error = SpedService.add_cfop(data.get("cfop"))
+        success, message_or_error = SpedService.add_cfop(data.get("cfop"), empresa_id=empresa_id)
         if success:
             return jsonify({"success": True, "message": message_or_error}), 201
         return jsonify({"success": False, "error": message_or_error}), 400
     except Exception as e:
         current_app.logger.error(f"Erro ao adicionar CFOP: {e}")
-        return jsonify(
-            {"success": False, "error": "Erro ao processar a requisição"}
-        ), 500
+        return jsonify({"success": False, "error": "Erro ao processar a requisição"}), 500
 
 
 @sped_bp.route("/cfops/<cfop>", methods=["GET"])
@@ -223,13 +259,25 @@ def delete_cfop(cfop):
 @sped_bp.route("/produtos", methods=["GET"])
 @login_required
 def get_produtos():
+    empresa_id = get_empresa_id_from_session()
+    if not empresa_id:
+        return jsonify(
+            {
+                "items": [],
+                "total": 0,
+                "page": 1,
+                "per_page": 50,
+                "total_pages": 0,
+            }
+        )
+
     page = int(request.args.get("page", 1))
     per_page = int(request.args.get("per_page", 50))
     filter_opt = request.args.get("filter")
     search_term = request.args.get("search")
 
     items, total = SpedService.get_produtos(
-        filter_opt=filter_opt, search_term=search_term, page=page, per_page=per_page
+        filter_opt=filter_opt, search_term=search_term, page=page, per_page=per_page, empresa_id=empresa_id
     )
 
     return jsonify(
@@ -256,9 +304,7 @@ def update_produto_acumulador():
     data = request.get_json()
     codigo_produto = data.get("codigo")
     codigo_acumulador = data.get("acumulador")
-    success, message = SpedService.update_produto_acumulador(
-        codigo_produto, codigo_acumulador
-    )
+    success, message = SpedService.update_produto_acumulador(codigo_produto, codigo_acumulador)
     return jsonify({"success": success, "message": message})
 
 
@@ -269,9 +315,7 @@ def bulk_update_produto_acumulador():
     product_codes = data.get("product_codes")
     acumulador_code = data.get("acumulador_code")
 
-    success, message = SpedService.bulk_update_produto_acumulador(
-        product_codes, acumulador_code
-    )
+    success, message = SpedService.bulk_update_produto_acumulador(product_codes, acumulador_code)
     if success:
         return jsonify({"success": True, "message": message})
     return jsonify({"success": False, "error": message}), 400
@@ -282,8 +326,20 @@ def bulk_update_produto_acumulador():
 def get_vendas():
     """Busca o relatório de resumo de vendas."""
     try:
+        empresa_id = get_empresa_id_from_session()
+        if not empresa_id:
+            return jsonify(
+                {
+                    "total_vendas": 0.0,
+                    "total_avista": 0.0,
+                    "total_prazo": 0.0,
+                    "percentual_avista": 0.0,
+                    "percentual_prazo": 0.0,
+                }
+            )
+
         competencia = request.args.get("competencia")
-        relatorio = SpedService.get_vendas(competencia=competencia)
+        relatorio = SpedService.get_vendas(competencia=competencia, empresa_id=empresa_id)
         return jsonify(relatorio)
     except ValueError as ve:
         return jsonify({"success": False, "error": str(ve)}), 400
@@ -296,7 +352,8 @@ def get_vendas():
 @login_required
 def get_competencias():
     try:
-        competencias = SpedService.get_competencias()
+        empresa_id = get_empresa_id_from_session()
+        competencias = SpedService.get_competencias(empresa_id=empresa_id)
         return jsonify(competencias)
     except Exception as e:
         current_app.logger.error(f"Erro ao buscar competências: {e}")
@@ -308,7 +365,11 @@ def get_competencias():
 def get_relatorio_vendas():
     competencia = request.args.get("competencia")
     try:
-        relatorio = SpedService.get_relatorio_vendas(competencia)
+        empresa_id = get_empresa_id_from_session()
+        if not empresa_id:
+            return jsonify({"total_geral": 0.0, "acumuladores": []})
+
+        relatorio = SpedService.get_relatorio_vendas(competencia, empresa_id=empresa_id)
         return jsonify(relatorio)
     except ValueError as ve:  # Captura o erro específico de validação
         return jsonify({"success": False, "error": str(ve)}), 400
@@ -323,16 +384,24 @@ def get_relatorio_cfop():
     competencia = request.args.get("competencia")
     timestamp = request.args.get("_t")  # Para invalidar cache
 
-    current_app.logger.info(
-        f"Requisição relatório CFOP - Competência: {competencia}, Timestamp: {timestamp}"
-    )
+    current_app.logger.info(f"Requisição relatório CFOP - Competência: {competencia}, Timestamp: {timestamp}")
 
     try:
-        relatorio = SpedService.get_relatorio_cfop(competencia) or []
+        empresa_id = get_empresa_id_from_session()
+        if not empresa_id:
+            # Retorno vazio se não houver empresa
+            response = jsonify([])
+            response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            response.headers["Pragma"] = "no-cache"
+            response.headers["Expires"] = "0"
+            return response
+
+        # Passa empresa_id para o serviço (que deve retornar lista)
+        relatorio = SpedService.get_relatorio_cfop(competencia, empresa_id=empresa_id) or []
         current_app.logger.info(f"Relatório CFOP gerado com {len(relatorio)} itens")
 
         # Adiciona headers para evitar cache
-        response = jsonify(relatorio or [])
+        response = jsonify(relatorio)
         response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
         response.headers["Pragma"] = "no-cache"
         response.headers["Expires"] = "0"
@@ -390,23 +459,14 @@ def aprovar_sugestao():
         if not codigo_item or not acumulador:
             return jsonify({"success": False, "error": "Dados incompletos"}), 400
 
-        from scripts.database import ProdutoSped, get_db
+        from .sped_service import SpedService
 
-        with get_db() as db:
-            produto = db.query(ProdutoSped).filter_by(codigo_item=codigo_item).first()
-            if produto:
-                produto.acumulador = acumulador
-                db.commit()
-                return jsonify(
-                    {
-                        "success": True,
-                        "message": f"Acumulador {acumulador} atribuído a {codigo_item}",
-                    }
-                )
-            else:
-                return jsonify(
-                    {"success": False, "error": "Produto não encontrado"}
-                ), 404
+        success, message = SpedService.update_produto_acumulador(codigo_item, acumulador)
+
+        if success:
+            return jsonify({"success": True, "message": message})
+        return jsonify({"success": False, "error": message}), 404
+
     except Exception as e:
         current_app.logger.error(f"Erro ao aprovar sugestão: {e}", exc_info=True)
         return jsonify({"success": False, "error": str(e)}), 500
@@ -448,7 +508,5 @@ def analisar_inconsistencias():
             }
         )
     except Exception as e:
-        current_app.logger.error(
-            f"Erro ao analisar inconsistências: {e}", exc_info=True
-        )
+        current_app.logger.error(f"Erro ao analisar inconsistências: {e}", exc_info=True)
         return jsonify({"success": False, "error": str(e)}), 500

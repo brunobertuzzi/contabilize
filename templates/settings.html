@@ -5,262 +5,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Configurações - Contabilize</title>
+    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --primary-color: #913453;
-            --primary-dark: #5e1b31;
-            --primary-light: #a13d4d;
-            --secondary-color: #6c757d;
-            --background-light: #f8f9fa;
-            --background-dark: #e9ecef;
-            --sidebar-bg: #212529;
-            --sidebar-text: #ffffff;
-            --sidebar-hover: #913453;
-            --text-dark: #343a40;
-            --text-light: #f8f9fa;
-        }
-
-        body {
-            font-family: 'Poppins', sans-serif;
-            background-color: var(--background-light);
-            color: var(--text-dark);
-        }
-
-        .sidebar {
-            width: 260px;
-            height: 100vh;
-            position: fixed;
-            top: 0;
-            left: 0;
-            background-color: var(--sidebar-bg);
-            transition: all 0.3s;
-            z-index: 1030;
-        }
-
-        .sidebar.collapsed {
-            width: 80px;
-        }
-
-        .sidebar.collapsed .nav-link-text,
-        .sidebar.collapsed .navbar-brand .brand-text {
-            display: none;
-        }
-
-        .sidebar .navbar-brand {
-            color: var(--sidebar-text) !important;
-            padding: 1.5rem 1.25rem;
-            font-weight: 700;
-            font-size: 1.5rem;
-            display: flex;
-            align-items: center;
-        }
-
-        .sidebar .navbar-brand .brand-icon {
-            font-size: 2rem;
-        }
-
-        .sidebar .navbar-brand .brand-text {
-            margin-left: 0.75rem;
-        }
-
-        .sidebar .nav-link {
-            display: flex;
-            align-items: center;
-            padding: 0.9rem 1.25rem;
-            color: var(--sidebar-text);
-            text-decoration: none;
-            transition: background-color 0.3s, color 0.3s;
-            white-space: nowrap;
-            font-weight: 400;
-        }
-
-        .sidebar .nav-link:hover,
-        .sidebar .nav-link.active {
-            background-color: var(--sidebar-hover) !important;
-            color: var(--text-light) !important;
-        }
-
-        .sidebar .nav-link.active {
-            background-color: var(--sidebar-hover) !important;
-            color: var(--text-light) !important;
-        }
-
-        .sidebar .nav-link i {
-            font-size: 1.5rem;
-            margin-right: 1rem;
-            width: 24px;
-            text-align: center;
-        }
-
-        .main-content {
-            margin-left: 260px;
-            transition: all 0.3s;
-            padding: 2rem;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-        }
-
-        .main-content.expanded {
-            margin-left: 80px;
-        }
-
-        .page-header {
-            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
-            color: var(--text-light);
-            border-radius: 0.5rem;
-            padding: 1rem 1.5rem;
-            margin-bottom: 2rem;
-        }
-
-        .card {
-            border: none;
-            border-radius: 0.5rem;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-            margin-bottom: 2rem;
-        }
-
-        .table thead {
-            background-color: var(--primary-dark);
-            color: var(--text-light);
-        }
-
-        .btn-primary {
-            background-color: var(--primary-color) !important;
-            border-color: var(--primary-color) !important;
-        }
-
-        .btn-primary:hover {
-            background-color: var(--primary-dark) !important;
-            border-color: var(--primary-dark) !important;
-        }
-
-        .footer {
-            padding: 1.5rem 0;
-            margin-top: auto;
-            background-color: var(--background-dark);
-            color: var(--secondary-color);
-            text-align: center;
-        }
-
-        .toast-container {
-            position: fixed;
-            bottom: 1rem;
-            right: 1rem;
-            z-index: 1060;
-        }
-
-        /* Novos estilos para layout moderno */
-        .icon-circle {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .user-card {
-            transition: all 0.3s ease;
-            border: 1px solid #e9ecef !important;
-        }
-
-        .user-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
-            border-color: var(--primary-color) !important;
-        }
-
-        .avatar-circle {
-            width: 45px;
-            height: 45px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .backup-action-card {
-            transition: all 0.3s ease;
-            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
-        }
-
-        .backup-action-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-            border-color: var(--primary-color) !important;
-        }
-
-        .card-header {
-            padding: 1.5rem 1.5rem 0.5rem 1.5rem;
-        }
-
-        .card-body {
-            padding: 1.5rem;
-        }
-
-        .dropdown-toggle::after {
-            display: none;
-        }
-
-        .form-control:focus {
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 0.2rem rgba(145, 52, 83, 0.25);
-        }
-
-        .btn-primary {
-            border-radius: 0.375rem;
-            font-weight: 500;
-        }
-
-        .btn-secondary {
-            background-color: var(--secondary-color);
-            border-color: var(--secondary-color);
-            color: white;
-        }
-
-        .btn-secondary:hover {
-            background-color: #5a6268;
-            border-color: #545b62;
-        }
-
-        /* Customização dos botões do dropdown */
-        .dropdown-item:hover {
-            background-color: var(--background-dark) !important;
-            color: var(--text-dark) !important;
-        }
-
-        .dropdown-item:focus {
-            background-color: var(--background-dark) !important;
-            color: var(--text-dark) !important;
-            outline: none !important;
-            box-shadow: none !important;
-        }
-
-        .dropdown-item:active {
-            background-color: var(--primary-color) !important;
-            color: var(--text-light) !important;
-        }
-
-        .dropdown-item.text-danger:hover {
-            background-color: #f8d7da !important;
-            color: #721c24 !important;
-        }
-
-        .dropdown-item.text-danger:active {
-            background-color: #dc3545 !important;
-            color: white !important;
-        }
-
-        .btn-outline-secondary:focus {
-            border-color: var(--primary-color) !important;
-            box-shadow: 0 0 0 0.2rem rgba(145, 52, 83, 0.25) !important;
-        }
-    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/main.css">
 </head>
 
 <body>
@@ -268,30 +22,28 @@
     {% include 'sidebar.html' %}
 
     <!-- Main Content -->
-    <div class="main-content expanded" id="mainContent">
+    <main class="main-content expanded" id="mainContent">
+        <!-- Page Header -->
         <header class="page-header text-center">
-            <div class="container">
-                <i class="bi bi-gear display-5 mb-2 text-light" aria-hidden="true"></i>
-                <h1 class="h2 fw-bold">Configurações</h1>
-                <p class="mb-0">Gerencie usuários, backups e outras configurações do sistema.</p>
-            </div>
+            <i class="bi bi-gear page-icon" aria-hidden="true"></i>
+            <h1 class="page-title">Configurações</h1>
+            <p class="page-subtitle">Gerencie usuários, backups e outras configurações do sistema.</p>
         </header>
 
-        <main class="container-fluid">
-            <!-- Grid de Configurações -->
+        <section class="container-fluid px-0">
             <div class="row g-4">
                 {% if current_user.is_admin %}
                 <!-- Seção de Usuários -->
                 <div class="col-12">
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-header bg-transparent border-0 pb-0">
+                    <div class="card">
+                        <div class="card-header">
                             <div class="d-flex align-items-center">
-                                <div class="icon-circle me-3" style="background-color: rgba(145, 52, 83, 0.1);">
-                                    <i class="bi bi-people fs-4" style="color: var(--primary-color);"></i>
+                                <div class="icon-circle me-3">
+                                    <i class="bi bi-people"></i>
                                 </div>
                                 <div>
-                                    <h5 class="mb-0 fw-bold">Gerenciar Usuários</h5>
-                                    <small class="text-muted">Controle de acesso e permissões</small>
+                                    <h5 class="card-title mb-1">Gerenciar Usuários</h5>
+                                    <p class="text-muted small mb-0">Controle de acesso e permissões</p>
                                 </div>
                             </div>
                         </div>
@@ -300,11 +52,11 @@
                             <div class="row g-3 mb-4">
                                 {% for user in users %}
                                 <div class="col-md-6 col-lg-4">
-                                    <div class="user-card p-3 border rounded-3 bg-light" data-user-id="{{ user.id }}">
+                                    <div class="user-card p-3" data-user-id="{{ user.id }}">
                                         <div class="d-flex align-items-center justify-content-between">
                                             <div class="d-flex align-items-center">
                                                 <div class="avatar-circle me-3">
-                                                    <i class="bi bi-person-circle fs-2 text-secondary"></i>
+                                                    <i class="bi bi-person-circle fs-4 text-secondary"></i>
                                                 </div>
                                                 <div>
                                                     <h6 class="mb-0 fw-semibold">{{ user.username }}</h6>
@@ -320,10 +72,10 @@
                                             </div>
                                             <div class="dropdown">
                                                 <button class="btn btn-sm btn-outline-secondary" type="button"
-                                                    data-bs-toggle="dropdown">
+                                                    data-bs-toggle="dropdown" aria-label="Opções">
                                                     <i class="bi bi-three-dots-vertical"></i>
                                                 </button>
-                                                <ul class="dropdown-menu">
+                                                <ul class="dropdown-menu dropdown-menu-end">
                                                     <li>
                                                         <button class="dropdown-item edit-user-btn"
                                                             data-user-id="{{ user.id }}"
@@ -352,8 +104,7 @@
                             <!-- Formulário de Novo Usuário -->
                             <div class="border-top pt-4">
                                 <h6 class="fw-semibold mb-3">
-                                    <i class="bi bi-person-plus me-2" style="color: var(--primary-color);"></i>Adicionar
-                                    Novo Usuário
+                                    <i class="bi bi-person-plus me-2 text-primary-custom"></i>Adicionar Novo Usuário
                                 </h6>
                                 <form id="addUserForm" class="row g-3">
                                     <div class="col-md-4">
@@ -367,7 +118,7 @@
                                         <div class="form-text">Mín. 8 caracteres, 2 tipos diferentes</div>
                                     </div>
                                     <div class="col-md-2">
-                                        <div class="form-check">
+                                        <div class="form-check pt-2">
                                             <input type="checkbox" class="form-check-input" id="is_admin"
                                                 name="is_admin">
                                             <label class="form-check-label small" for="is_admin">Administrador</label>
@@ -381,22 +132,21 @@
                                 </form>
 
                                 <!-- Requisitos de Senha -->
-                                <div class="mt-3 p-3 bg-light rounded">
+                                <div class="mt-4 p-3 bg-light rounded">
                                     <h6 class="fw-semibold mb-2">
-                                        <i class="bi bi-shield-check me-2"
-                                            style="color: var(--primary-color);"></i>Requisitos de Senha
+                                        <i class="bi bi-shield-check me-2 text-primary-custom"></i>Requisitos de Senha
                                     </h6>
                                     <div class="row">
                                         <div class="col-md-6">
-                                            <ul class="list-unstyled mb-0 small">
-                                                <li><i class="bi bi-check-circle text-success me-1"></i>Mínimo de 8
-                                                    caracteres</li>
-                                                <li><i class="bi bi-check-circle text-success me-1"></i>Pelo menos 2
-                                                    tipos de caracteres:</li>
+                                            <ul class="list-unstyled mb-0 small text-muted">
+                                                <li><i class="bi bi-check2 text-success me-1"></i>Mínimo de 8 caracteres
+                                                </li>
+                                                <li><i class="bi bi-check2 text-success me-1"></i>Pelo menos 2 tipos de
+                                                    caracteres:</li>
                                             </ul>
                                         </div>
                                         <div class="col-md-6">
-                                            <ul class="list-unstyled mb-0 small">
+                                            <ul class="list-unstyled mb-0 small text-muted">
                                                 <li class="ms-3">• Maiúsculas (A-Z)</li>
                                                 <li class="ms-3">• Minúsculas (a-z)</li>
                                                 <li class="ms-3">• Números (0-9)</li>
@@ -413,15 +163,15 @@
 
                 <!-- Seção de Backup -->
                 <div class="col-12">
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-header bg-transparent border-0 pb-0">
+                    <div class="card">
+                        <div class="card-header">
                             <div class="d-flex align-items-center">
-                                <div class="icon-circle me-3" style="background-color: rgba(145, 52, 83, 0.1);">
-                                    <i class="bi bi-database fs-4" style="color: var(--primary-color);"></i>
+                                <div class="icon-circle me-3">
+                                    <i class="bi bi-database"></i>
                                 </div>
                                 <div>
-                                    <h5 class="mb-0 fw-bold">Backup e Restauração</h5>
-                                    <small class="text-muted">Gerencie suas cópias de segurança</small>
+                                    <h5 class="card-title mb-1">Backup e Restauração</h5>
+                                    <p class="text-muted small mb-0">Gerencie suas cópias de segurança</p>
                                 </div>
                             </div>
                         </div>
@@ -429,14 +179,11 @@
                             <div class="row g-4">
                                 <!-- Fazer Backup -->
                                 <div class="col-md-6">
-                                    <div class="backup-action-card h-100 p-4 border rounded-3 text-center">
-                                        <div class="mb-3">
-                                            <i class="bi bi-download display-6"
-                                                style="color: var(--primary-color);"></i>
-                                        </div>
-                                        <h6 class="fw-semibold mb-2">Criar Backup</h6>
-                                        <p class="text-muted small mb-3">Gere uma cópia de segurança completa do banco
-                                            de dados</p>
+                                    <div class="card action-card h-100">
+                                        <i class="bi bi-download action-icon"></i>
+                                        <h5 class="action-title">Criar Backup</h5>
+                                        <p class="action-description">Gere uma cópia de segurança completa do banco de
+                                            dados</p>
                                         <button type="button" id="backupDatabaseBtn" class="btn btn-primary">
                                             <i class="bi bi-download me-2"></i>Fazer Backup
                                         </button>
@@ -445,14 +192,11 @@
 
                                 <!-- Restaurar Backup -->
                                 <div class="col-md-6">
-                                    <div class="backup-action-card h-100 p-4 border rounded-3 text-center">
-                                        <div class="mb-3">
-                                            <i class="bi bi-upload display-6"
-                                                style="color: var(--secondary-color);"></i>
-                                        </div>
-                                        <h6 class="fw-semibold mb-2">Restaurar Backup</h6>
-                                        <p class="text-muted small mb-3">Substitua os dados atuais por um backup
-                                            anterior</p>
+                                    <div class="card action-card h-100">
+                                        <i class="bi bi-upload action-icon" style="color: var(--secondary-color);"></i>
+                                        <h5 class="action-title">Restaurar Backup</h5>
+                                        <p class="action-description">Substitua os dados atuais por um backup anterior
+                                        </p>
                                         <form id="restoreDatabaseForm" enctype="multipart/form-data">
                                             <div class="mb-3">
                                                 <input type="file" class="form-control form-control-sm" id="backup_file"
@@ -469,11 +213,10 @@
                     </div>
                 </div>
             </div>
-        </main>
+        </section>
+    </main>
 
-    </div>
-
-    <!-- Modals -->
+    <!-- Modal Editar Usuário -->
     <div class="modal fade" id="editUserModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -493,7 +236,7 @@
                             <label class="form-check-label" for="editIsAdmin">Administrador</label>
                         </div>
                         <hr>
-                        <h6>Alterar Senha (Opcional)</h6>
+                        <h6 class="fw-semibold">Alterar Senha (Opcional)</h6>
                         <div class="mb-3">
                             <label for="newPassword" class="form-label">Nova Senha</label>
                             <input type="password" class="form-control" id="newPassword" name="new_password"
@@ -506,7 +249,6 @@
                                 name="confirm_new_password" minlength="8">
                         </div>
 
-                        <!-- Requisitos de Senha no Modal -->
                         <div class="alert alert-info">
                             <h6 class="alert-heading mb-2">
                                 <i class="bi bi-info-circle me-1"></i>Requisitos de Senha
@@ -514,7 +256,6 @@
                             <ul class="mb-0 small">
                                 <li>Mínimo de 8 caracteres</li>
                                 <li>Pelo menos 2 tipos: maiúsculas, minúsculas, números ou símbolos</li>
-                                <li>Evite informações pessoais óbvias</li>
                             </ul>
                         </div>
                     </div>
@@ -527,42 +268,54 @@
         </div>
     </div>
 
+    <!-- Toast Container -->
     <div class="toast-container">
         <div id="toastContainer"></div>
     </div>
 
+    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/static/js/main.js"></script>
     <script>
+        // Sidebar toggle
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('mainContent');
+
+        function toggleSidebar(expand) {
+            if (expand) {
+                sidebar.classList.remove('collapsed');
+                mainContent.classList.remove('expanded');
+            } else {
+                sidebar.classList.add('collapsed');
+                mainContent.classList.add('expanded');
+            }
+        }
+
+        if (window.innerWidth > 768) {
+            sidebar.addEventListener('mouseenter', () => toggleSidebar(true));
+            sidebar.addEventListener('mouseleave', () => toggleSidebar(false));
+        }
+
+        // Edit User Modal
         const editUserModal = new bootstrap.Modal(document.getElementById('editUserModal'));
 
-        // Função para validar força da senha
+        // Validação de senha
         function validatePasswordStrength(password) {
-            if (password.length < 8) {
-                return 'Senha deve ter pelo menos 8 caracteres';
-            }
-
+            if (password.length < 8) return 'Senha deve ter pelo menos 8 caracteres';
             const hasUpper = /[A-Z]/.test(password);
             const hasLower = /[a-z]/.test(password);
             const hasDigit = /[0-9]/.test(password);
             const hasSpecial = /[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]/.test(password);
-
             const strengthCount = [hasUpper, hasLower, hasDigit, hasSpecial].filter(Boolean).length;
-
-            if (strengthCount < 2) {
-                return 'Senha deve conter pelo menos 2 tipos de caracteres: maiúsculas, minúsculas, números ou símbolos';
-            }
-
-            return null; // Senha válida
+            if (strengthCount < 2) return 'Senha deve conter pelo menos 2 tipos de caracteres';
+            return null;
         }
 
-        // Validação em tempo real para o campo de senha do formulário de adicionar
+        // Validação em tempo real
         document.getElementById('password').addEventListener('input', function () {
-            const password = this.value;
-            const error = validatePasswordStrength(password);
+            const error = validatePasswordStrength(this.value);
             const formText = this.nextElementSibling;
-
-            if (error && password.length > 0) {
+            if (error && this.value.length > 0) {
                 this.classList.add('is-invalid');
                 formText.textContent = error;
                 formText.className = 'form-text text-danger';
@@ -573,14 +326,10 @@
             }
         });
 
-        // Validação em tempo real para o campo de nova senha no modal
         document.getElementById('newPassword').addEventListener('input', function () {
-            const password = this.value;
-            if (password.length === 0) return; // Não valida se estiver vazio (campo opcional)
-
-            const error = validatePasswordStrength(password);
+            if (this.value.length === 0) return;
+            const error = validatePasswordStrength(this.value);
             const formText = this.nextElementSibling;
-
             if (error) {
                 this.classList.add('is-invalid');
                 formText.textContent = error;
@@ -592,14 +341,10 @@
             }
         });
 
-        // Validação de confirmação de senha no modal
         document.getElementById('confirmNewPassword').addEventListener('input', function () {
             const password = document.getElementById('newPassword').value;
-            const confirmPassword = this.value;
-
-            if (confirmPassword.length === 0) return;
-
-            if (password !== confirmPassword) {
+            if (this.value.length === 0) return;
+            if (password !== this.value) {
                 this.setCustomValidity('As senhas não coincidem');
                 this.classList.add('is-invalid');
             } else {
@@ -608,54 +353,40 @@
             }
         });
 
-        // Gerenciamento de Usuários
+        // Adicionar usuário
         document.getElementById('addUserForm').addEventListener('submit', function (e) {
             e.preventDefault();
-
-            // Validação adicional antes do envio
             const password = document.getElementById('password').value;
             const passwordError = validatePasswordStrength(password);
-
             if (passwordError) {
                 showToast(passwordError, 'danger');
                 return;
             }
-
             const formData = new FormData(this);
             const formDataObj = {};
             formData.forEach((value, key) => {
-                if (key === 'is_admin') {
-                    formDataObj[key] = value === 'on';
-                } else {
-                    formDataObj[key] = value;
-                }
+                formDataObj[key] = key === 'is_admin' ? value === 'on' : value;
             });
 
             showSpinner();
             fetch('/settings/add_user', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formDataObj)
             })
                 .then(response => response.json())
                 .then(data => {
                     showToast(data.message, data.success ? 'success' : 'danger');
                     if (data.success) {
-                        this.reset(); // Limpa o formulário
-                        setTimeout(() => window.location.reload(), 1500); // Mantido por simplicidade, mas o ideal seria adicionar a linha na tabela dinamicamente.
+                        this.reset();
+                        setTimeout(() => window.location.reload(), 1500);
                     }
                 })
-                .catch(error => {
-                    console.error('Error:', error);
-                    showToast('Erro ao adicionar usuário', 'danger');
-                })
-                .finally(() => {
-                    hideSpinner();
-                });
+                .catch(() => showToast('Erro ao adicionar usuário', 'danger'))
+                .finally(() => hideSpinner());
         });
 
+        // Editar usuário
         document.querySelectorAll('.edit-user-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.getElementById('editUserId').value = btn.dataset.userId;
@@ -668,8 +399,6 @@
 
         document.getElementById('editUserForm').addEventListener('submit', function (e) {
             e.preventDefault();
-
-            // Validação adicional da nova senha se fornecida
             const newPassword = document.getElementById('newPassword').value;
             const confirmPassword = document.getElementById('confirmNewPassword').value;
 
@@ -679,7 +408,6 @@
                     showToast(passwordError, 'danger');
                     return;
                 }
-
                 if (newPassword !== confirmPassword) {
                     showToast('As senhas não coincidem', 'danger');
                     return;
@@ -690,19 +418,14 @@
             const formData = new FormData(this);
             const formDataObj = {};
             formData.forEach((value, key) => {
-                if (key === 'is_admin') {
-                    formDataObj[key] = value === 'on';
-                } else if (value) { // Só inclui campos com valor
-                    formDataObj[key] = value;
-                }
+                if (key === 'is_admin') formDataObj[key] = value === 'on';
+                else if (value) formDataObj[key] = value;
             });
 
             showSpinner();
             fetch(`/settings/edit_user/${userId}`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formDataObj)
             })
                 .then(response => response.json())
@@ -710,35 +433,19 @@
                     showToast(data.message, data.success ? 'success' : 'danger');
                     if (data.success) {
                         editUserModal.hide();
-                        // Atualiza a linha da tabela dinamicamente
-                        const row = document.querySelector(`tr[data-user-id='${userId}']`);
-                        if (row) {
-                            row.cells[0].textContent = data.user.username;
-                            const adminCell = row.cells[1];
-                            adminCell.innerHTML = data.user.is_admin
-                                ? '<i class="bi bi-check-circle-fill text-success"></i>'
-                                : '<i class="bi bi-x-circle-fill text-danger"></i>';
-
-                            // Atualiza os atributos data-* nos botões
-                            row.querySelector('.edit-user-btn').dataset.username = data.user.username;
-                            row.querySelector('.delete-user-btn').dataset.username = data.user.username;
-                        }
+                        setTimeout(() => window.location.reload(), 1500);
                     }
                 })
-                .catch(error => {
-                    console.error('Error:', error);
-                    showToast('Erro ao editar usuário', 'danger');
-                })
-                .finally(() => {
-                    hideSpinner();
-                });
+                .catch(() => showToast('Erro ao editar usuário', 'danger'))
+                .finally(() => hideSpinner());
         });
 
+        // Deletar usuário
         document.querySelectorAll('.delete-user-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const userId = btn.dataset.userId;
                 const username = btn.dataset.username;
-                const message = `Tem certeza que deseja excluir o usuário <strong>${username}</strong>?`;
+                const message = `Você tem certeza que deseja excluir o usuário <strong>${username}</strong>?`;
 
                 showConfirmModal(message, () => {
                     showSpinner();
@@ -750,69 +457,54 @@
                         .then(response => response.json())
                         .then(data => {
                             showToast(data.message, data.success ? 'success' : 'danger');
-                            if (data.success) {
-                                // Remove a linha da tabela dinamicamente
-                                document.querySelector(`tr[data-user-id='${userId}']`).remove();
-                            }
+                            if (data.success) setTimeout(() => window.location.reload(), 1500);
                         })
-                        .finally(() => {
-                            hideSpinner();
-                        });
+                        .finally(() => hideSpinner());
                 });
             });
         });
 
-        // Backup e Restauração
+        // Backup
         document.getElementById('backupDatabaseBtn').addEventListener('click', async () => {
             const url = '/settings/backup_database';
-
-            // Se o navegador suportar a File System Access API (showSaveFilePicker),
-            // podemos pedir diretamente ao usuário onde salvar o arquivo localmente.
             if ('showSaveFilePicker' in window) {
                 showSpinner();
                 try {
                     const response = await fetch(url);
                     if (!response.ok) {
-                        // tenta obter mensagem JSON de erro
                         const data = await response.json().catch(() => null);
                         showToast(data?.message || 'Erro ao criar backup', 'danger');
                         return;
                     }
-
                     const blob = await response.blob();
-
-                    // tentar extrair o filename do header Content-Disposition
                     let filename = 'backup.db';
                     const cd = response.headers.get('content-disposition');
                     if (cd) {
                         const m = cd.match(/filename\*=UTF-8''([^;]+)|filename=\"?([^\";]+)\"?/);
                         if (m) filename = decodeURIComponent(m[1] || m[2]);
                     }
-
                     const opts = {
                         suggestedName: filename,
                         types: [{ description: 'SQLite DB', accept: { 'application/x-sqlite3': ['.db'] } }]
                     };
-
                     const handle = await window.showSaveFilePicker(opts);
                     const writable = await handle.createWritable();
                     await writable.write(blob);
                     await writable.close();
-
                     showToast('Backup salvo com sucesso', 'success');
                 } catch (err) {
-                    console.error('Erro ao salvar backup via File System API:', err);
+                    console.error('Erro ao salvar backup:', err);
                     showToast('Erro ao salvar backup localmente', 'danger');
                 } finally {
                     hideSpinner();
                 }
             } else {
-                // Fallback: inicia o download normal (navegador abre diálogo ou salva em Downloads)
                 window.location.href = url;
                 showToast('Iniciando download do backup...', 'info');
             }
         });
 
+        // Restaurar
         document.getElementById('restoreDatabaseForm').addEventListener('submit', function (e) {
             e.preventDefault();
             const formData = new FormData(this);
@@ -823,14 +515,9 @@
                     showToast(data.message, data.success ? 'success' : 'danger');
                     if (data.success) this.reset();
                 })
-                .catch(error => {
-                    showToast('Erro ao restaurar o backup.', 'danger');
-                })
-                .finally(() => {
-                    hideSpinner();
-                });
+                .catch(() => showToast('Erro ao restaurar o backup.', 'danger'))
+                .finally(() => hideSpinner());
         });
-
     </script>
 </body>
 

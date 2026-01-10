@@ -1,4 +1,18 @@
-// Funções de utilidade
+﻿// Debug flag: defina `window.SPED_DEBUG = true` em dev para ver logs
+// FunÃ§Ãµes de utilidade
+// Se `window.SPED_DEBUG` for falso, silencia `console.log` para evitar poluição em produção.
+(function () {
+    try {
+        if (!window.SPED_DEBUG) {
+            if (console && console.log) {
+                console._log = console.log.bind(console);
+                console.log = function () { };
+            }
+        }
+    } catch (e) {
+        // ambiente sem `window`/`console` não deve quebrar
+    }
+})();
 function formatDate(date) {
     return date.toISOString().split('T')[0];
 }
@@ -16,24 +30,24 @@ function formatCurrency(value) {
 // as they are handled by specific warning elements on the page.
 const SUPPRESS_TOAST_ERROR_MESSAGES = ["produto(s) sem acumulador"];
 
-// Variável para controlar se o spinner deve ser mostrado automaticamente
+// VariÃ¡vel para controlar se o spinner deve ser mostrado automaticamente
 let autoSpinnerEnabled = true;
 
-// Variável global para sugestões pendentes de classificação
+// VariÃ¡vel global para sugestÃµes pendentes de classificaÃ§Ã£o
 window.sugestoesPendentes = [];
 
-// Função para verificar se há sugestão para um produto
+// FunÃ§Ã£o para verificar se hÃ¡ sugestÃ£o para um produto
 function getSugestao(codigoItem) {
     if (!window.sugestoesPendentes) return null;
     return window.sugestoesPendentes.find(s => s.codigo_item === codigoItem);
 }
 
-// Funções de API
+// FunÃ§Ãµes de API
 async function fetchApi(endpoint, method = 'GET', data = null) {
     if (autoSpinnerEnabled) {
         showSpinner();
     }
-    let shouldShowGlobalToast = true; // Flag para controlar a exibição do toast global
+    let shouldShowGlobalToast = true; // Flag para controlar a exibiÃ§Ã£o do toast global
     try {
         const options = {
             method,
@@ -46,7 +60,7 @@ async function fetchApi(endpoint, method = 'GET', data = null) {
             options.body = JSON.stringify(data);
         }
 
-        console.log(`Fazendo requisição ${method} para ${endpoint}`, data);
+        console.log(`Fazendo requisiÃ§Ã£o ${method} para ${endpoint}`, data);
         const response = await fetch(endpoint, options);
         console.log('Status da resposta:', response.status);
 
@@ -54,7 +68,7 @@ async function fetchApi(endpoint, method = 'GET', data = null) {
         console.log('Resultado da resposta:', result);
 
         if (!response.ok) {
-            const errorMessage = result.message || result.error || 'Erro na requisição';
+            const errorMessage = result.message || result.error || 'Erro na requisiÃ§Ã£o';
             // Check if the error message should suppress the global toast
             if (SUPPRESS_TOAST_ERROR_MESSAGES.some(pattern => errorMessage.includes(pattern))) {
                 shouldShowGlobalToast = false;
@@ -64,13 +78,13 @@ async function fetchApi(endpoint, method = 'GET', data = null) {
 
         return result;
     } catch (error) {
-        // Este bloco catch lida com erros de rede ou erros lançados pelo bloco try.
-        // O toast global só será exibido se a flag `shouldShowGlobalToast` for verdadeira.
+        // Este bloco catch lida com erros de rede ou erros lanÃ§ados pelo bloco try.
+        // O toast global sÃ³ serÃ¡ exibido se a flag `shouldShowGlobalToast` for verdadeira.
         if (shouldShowGlobalToast) {
-            console.error('Erro na requisição API:', error);
+            console.error('Erro na requisiÃ§Ã£o API:', error);
             showToast(error.message, 'danger');
         }
-        throw error; // Re-lança o erro para que a função que chamou possa tratá-lo
+        throw error; // Re-lanÃ§a o erro para que a funÃ§Ã£o que chamou possa tratÃ¡-lo
     } finally {
         if (autoSpinnerEnabled) {
             hideSpinner();
@@ -78,7 +92,7 @@ async function fetchApi(endpoint, method = 'GET', data = null) {
     }
 }
 
-// Função de debounce para otimizar inputs de pesquisa
+// FunÃ§Ã£o de debounce para otimizar inputs de pesquisa
 function debounce(func, wait) {
     let timeout;
     return function executedFunction(...args) {
@@ -165,10 +179,10 @@ async function saveCfop() {
     const form = document.getElementById('cfopForm');
     const submitButton = document.getElementById('saveCfopButton');
 
-    // Remove classes de validação anteriores
+    // Remove classes de validaÃ§Ã£o anteriores
     form.classList.remove('was-validated');
 
-    // Adiciona classe para mostrar feedback de validação
+    // Adiciona classe para mostrar feedback de validaÃ§Ã£o
     form.classList.add('was-validated');
 
     if (!form.checkValidity()) {
@@ -184,11 +198,11 @@ async function saveCfop() {
     };
 
     console.log('Dados do CFOP a serem enviados:', data);
-    console.log('É edição?', isEdit);
+    console.log('Ã ediÃ§Ã£o?', isEdit);
     console.log('CFOP original:', originalCfop);
 
     try {
-        // Desabilita o botão durante o envio
+        // Desabilita o botÃ£o durante o envio
         if (submitButton) {
             submitButton.disabled = true;
             submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Salvando...';
@@ -197,7 +211,7 @@ async function saveCfop() {
         console.log('Enviando dados do CFOP:', data);
         const method = isEdit ? 'PUT' : 'POST';
         const endpoint = isEdit ? `/sped/cfops/${originalCfop}` : '/sped/cfops';
-        console.log('Método:', method);
+        console.log('MÃ©todo:', method);
         console.log('Endpoint:', endpoint);
         const response = await fetchApi(endpoint, method, data);
         console.log('Resposta recebida:', response);
@@ -218,7 +232,7 @@ async function saveCfop() {
         console.error('Erro ao salvar CFOP:', error);
         showToast('Erro ao cadastrar CFOP. Tente novamente.', 'danger');
     } finally {
-        // Reabilita o botão após o envio
+        // Reabilita o botÃ£o apÃ³s o envio
         if (submitButton) {
             submitButton.disabled = false;
             submitButton.innerHTML = 'Salvar';
@@ -230,11 +244,11 @@ async function editCfop(codigo) {
     try {
         const cfop = await fetchApi(`/sped/cfops/${codigo}`);
         if (!cfop) {
-            showToast('CFOP não encontrado.', 'danger');
+            showToast('CFOP nÃ£o encontrado.', 'danger');
             return;
         }
 
-        // Limpa o formulário primeiro
+        // Limpa o formulÃ¡rio primeiro
         const form = document.getElementById('cfopForm');
         form.reset();
         form.classList.remove('was-validated');
@@ -242,7 +256,7 @@ async function editCfop(codigo) {
         // Preenche os campos
         document.getElementById('cfopModalTitle').innerHTML = '<i class="bi bi-pencil me-2"></i>Editar CFOP';
         document.getElementById('cfopCodigo').value = cfop.cfop;
-        document.getElementById('cfopOriginal').value = cfop.cfop; // Armazena o código original
+        document.getElementById('cfopOriginal').value = cfop.cfop; // Armazena o cÃ³digo original
 
 
         // Abre o modal
@@ -255,10 +269,10 @@ async function editCfop(codigo) {
 }
 
 async function deleteCfop(codigo) {
-    const message = `Tem certeza que deseja excluir o CFOP <strong>${codigo}</strong>?`;
+    const message = `Você tem certeza que deseja excluir o CFOP <strong>${codigo}</strong>?`;
     showConfirmModal(message, async () => {
         const response = await fetchApi(`/sped/cfops/${codigo}`, 'DELETE');
-        showToast(response.message || 'CFOP excluído com sucesso!', response.success ? 'success' : 'danger');
+        showToast(response.message || 'CFOP excluÃ­do com sucesso!', response.success ? 'success' : 'danger');
         if (response.success) await loadCfops();
     });
 }
@@ -269,7 +283,7 @@ let listaAcumuladores = [];
 async function loadAcumuladores() {
     const search = document.getElementById('searchAcumuladores').value;
     const acumuladores = await fetchApi(`/sped/acumuladores?search=${search}`);
-    listaAcumuladores = acumuladores; // Armazena na variável global
+    listaAcumuladores = acumuladores; // Armazena na variÃ¡vel global
     const tbody = document.getElementById('acumuladoresBody');
     tbody.innerHTML = '';
 
@@ -293,7 +307,7 @@ async function loadAcumuladores() {
         tbody.appendChild(tr);
     });
 
-    // Atualiza os selects de Acumulador em toda a página (modais e ações em massa)
+    // Atualiza os selects de Acumulador em toda a pÃ¡gina (modais e aÃ§Ãµes em massa)
     const acumuladorSelects = document.querySelectorAll('select[id$="Acumulador"]');
     acumuladorSelects.forEach(select => {
         const currentValue = select.value;
@@ -307,7 +321,7 @@ async function loadAcumuladores() {
         select.value = currentValue;
     });
 
-    // Explicitamente atualiza o select de ação em massa
+    // Explicitamente atualiza o select de aÃ§Ã£o em massa
     const bulkAcumuladorSelect = document.getElementById('bulkAcumuladorSelect');
     if (bulkAcumuladorSelect) {
         const currentValue = bulkAcumuladorSelect.value;
@@ -365,11 +379,11 @@ async function editAcumulador(codigo) {
     try {
         const acumulador = await fetchApi(`/sped/acumuladores/${codigo}`);
         if (!acumulador) {
-            showToast('Acumulador não encontrado.', 'danger');
+            showToast('Acumulador nÃ£o encontrado.', 'danger');
             return;
         }
 
-        // Limpa o formulário primeiro
+        // Limpa o formulÃ¡rio primeiro
         const form = document.getElementById('acumuladorForm');
         form.reset();
         form.classList.remove('was-validated');
@@ -390,12 +404,12 @@ async function editAcumulador(codigo) {
     }
 }
 async function deleteAcumulador(codigo) {
-    const message = `Tem certeza que deseja excluir o acumulador <strong>${codigo}</strong>?`;
+    const message = `Você tem certeza que deseja excluir o acumulador <strong>${codigo}</strong>?`;
     showConfirmModal(message, async () => {
         const response = await fetchApi(`/sped/acumuladores/${codigo}`, 'DELETE');
-        showToast(response.message || 'Acumulador excluído com sucesso!', response.success ? 'success' : 'danger');
+        showToast(response.message || 'Acumulador excluÃ­do com sucesso!', response.success ? 'success' : 'danger');
         if (response.success) await loadAcumuladores();
-        // loadProdutos() é chamado dentro de loadAcumuladores se necessário
+        // loadProdutos() Ã© chamado dentro de loadAcumuladores se necessÃ¡rio
     });
 }
 
@@ -405,9 +419,9 @@ const itemsPerPage = 30;
 
 async function loadProdutos(page = 1) {
     console.log('=== loadProdutos chamada ===');
-    console.log('Página:', page);
+    console.log('PÃ¡gina:', page);
 
-    // Limpa a seleção ao carregar uma nova página ou aplicar um filtro
+    // Limpa a seleÃ§Ã£o ao carregar uma nova pÃ¡gina ou aplicar um filtro
     selectedProducts.clear();
     updateBulkActionUI();
     document.getElementById('selectAllProducts').checked = false;
@@ -425,12 +439,11 @@ async function loadProdutos(page = 1) {
 
     response.items.forEach(produto => {
         const isChecked = selectedProducts.has(produto.codigo_item);
-        const sugestao = getSugestao(produto.codigo_item);
         const tr = document.createElement('tr');
         tr.className = `${!produto.acumulador ? 'table-warning' : ''}`;
         tr.dataset.codigo = produto.codigo_item;
 
-        // Constrói a célula de acumulador com ou sem botões de aprovação
+        // CÃ©lula de acumulador - apenas o select, sem sugestÃµes
         let acumuladorCell = `
             <select class="form-select form-select-sm acumulador-select" 
                     data-codigo="${produto.codigo_item}">
@@ -441,27 +454,6 @@ async function loadProdutos(page = 1) {
                     </option>
                 `).join('')}
             </select>`;
-
-        // Se há sugestão pendente, adiciona botões de aprovação
-        if (sugestao && !produto.acumulador) {
-            acumuladorCell = `
-                <div class="d-flex align-items-center gap-2">
-                    <span class="badge bg-info text-dark flex-grow-1">
-                        <i class="bi bi-lightbulb me-1"></i>${sugestao.acumulador_sugerido}
-                    </span>
-                    <button type="button" class="btn btn-sm btn-success" 
-                            onclick="aprovarSugestao('${produto.codigo_item}', '${sugestao.acumulador_sugerido}')"
-                            title="Aprovar sugestão">
-                        <i class="bi bi-check-lg"></i>
-                    </button>
-                    <button type="button" class="btn btn-sm btn-danger" 
-                            onclick="rejeitarSugestao('${produto.codigo_item}')"
-                            title="Rejeitar sugestão">
-                        <i class="bi bi-x-lg"></i>
-                    </button>
-                </div>
-                <small class="text-muted d-block mt-1">${sugestao.motivo}</small>`;
-        }
 
         tr.innerHTML = `
             <td class="text-center"><input class="form-check-input product-checkbox" type="checkbox" data-codigo="${produto.codigo_item}" ${isChecked ? 'checked' : ''}></td>
@@ -474,10 +466,10 @@ async function loadProdutos(page = 1) {
         tbody.appendChild(tr);
     });
 
-    // Garante que o estado do "selecionar todos" reflita a página atual
+    // Garante que o estado do "selecionar todos" reflita a pÃ¡gina atual
     updateSelectAllCheckbox();
 
-    // Atualiza a paginação
+    // Atualiza a paginaÃ§Ã£o
     const pagination = document.getElementById('produtosPagination');
     pagination.innerHTML = '';
     const totalPages = Math.ceil(response.total / itemsPerPage);
@@ -505,13 +497,13 @@ async function loadProdutos(page = 1) {
 
         const nextLi = document.createElement('li');
         nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
-        nextLi.innerHTML = `<button class="page-link" onclick="loadProdutos(${currentPage + 1})">Próximo</button>`;
+        nextLi.innerHTML = `<button class="page-link" onclick="loadProdutos(${currentPage + 1})">PrÃ³ximo</button>`;
         pagination.appendChild(nextLi);
     }
 }
 
 async function deleteProduto(codigo) {
-    const message = `Tem certeza que deseja inativar o produto <strong>${codigo}</strong>?`;
+    const message = `Você tem certeza que deseja inativar o produto <strong>${codigo}</strong>?`;
     showConfirmModal(message, async () => {
         const response = await fetchApi(`/sped/produtos/${codigo}`, 'DELETE');
         showToast(response.message || 'Produto inativado com sucesso!', response.success ? 'success' : 'danger');
@@ -519,7 +511,7 @@ async function deleteProduto(codigo) {
     });
 }
 
-// --- Lógica de Seleção em Massa de Produtos ---
+// --- LÃ³gica de SeleÃ§Ã£o em Massa de Produtos ---
 const selectedProducts = new Set();
 const bulkActionContainer = document.getElementById('bulkActionContainer');
 const selectedCountSpan = document.getElementById('selectedCount');
@@ -544,7 +536,7 @@ function updateSelectAllCheckbox() {
 
 // Event listener unificado para o tbody de produtos
 document.getElementById('produtosBody').addEventListener('change', async (e) => {
-    // Gerencia checkboxes de seleção de produtos
+    // Gerencia checkboxes de seleÃ§Ã£o de produtos
     if (e.target.classList.contains('product-checkbox')) {
         const codigo = e.target.dataset.codigo;
         if (e.target.checked) {
@@ -555,7 +547,7 @@ document.getElementById('produtosBody').addEventListener('change', async (e) => 
         updateBulkActionUI();
     }
 
-    // Gerencia mudanças nos selects de acumulador
+    // Gerencia mudanÃ§as nos selects de acumulador
     if (e.target.classList.contains('acumulador-select')) {
         const codigo = e.target.dataset.codigo;
         const acumulador = e.target.value;
@@ -574,7 +566,7 @@ document.getElementById('produtosBody').addEventListener('change', async (e) => 
                 } else {
                     row.classList.add('table-warning');
                 }
-                // Recarrega os relatórios
+                // Recarrega os relatÃ³rios
                 await Promise.all([
                     loadVendasReport(),
                     loadCfopReport()
@@ -582,7 +574,7 @@ document.getElementById('produtosBody').addEventListener('change', async (e) => 
             }
         } catch (error) {
             console.error('Erro ao atualizar acumulador:', error);
-            // Reverte a seleção em caso de erro
+            // Reverte a seleÃ§Ã£o em caso de erro
             e.target.value = e.target.dataset.originalValue || '';
         }
     }
@@ -620,35 +612,43 @@ document.getElementById('applyBulkAction').addEventListener('click', async () =>
         showToast(response.message, 'success');
         selectedProducts.clear();
         updateBulkActionUI();
-        // Recarrega a página atual e os relatórios
+        // Recarrega a pÃ¡gina atual e os relatÃ³rios
         await Promise.all([
             loadProdutos(currentPage),
             loadVendasReport(),
             loadCfopReport()
         ]);
     } catch (error) {
-        console.error('Erro na atualização em massa:', error);
-        // fetchApi já mostra o toast de erro
+        console.error('Erro na atualizaÃ§Ã£o em massa:', error);
+        // fetchApi jÃ¡ mostra o toast de erro
     }
 });
 
 // Gerenciamento de Vendas
 async function loadVendas(page = 1) {
     console.log('loadVendas called');
-    const competencia = document.getElementById('competenciaVendasFilter').value;
     const vendasTable = document.getElementById('vendasTable');
     const warningDiv = document.getElementById('vendasReportWarning');
     const warningText = document.getElementById('vendasReportWarningText');
+    const tbody = document.getElementById('vendasBody');
 
-    vendasTable.classList.add('d-none');
+    // Limpa o tbody e esconde warning
+    tbody.innerHTML = '';
     warningDiv.classList.add('d-none');
+
+    // Sempre mostra a tabela (cabeçalho visível)
+    vendasTable.classList.remove('d-none');
+
+    // Se não há empresa selecionada, mostra apenas o cabeçalho (tbody vazio)
+    if (!window.empresaSelecionada) {
+        console.log('Nenhuma empresa selecionada - exibindo apenas cabeçalho da tabela de vendas');
+        return;
+    }
+
+    const competencia = document.getElementById('competenciaVendasFilter').value;
 
     try {
         const data = await fetchApi(`/sped/vendas?competencia=${competencia}`);
-        vendasTable.classList.remove('d-none');
-
-        const tbody = document.getElementById('vendasBody');
-        tbody.innerHTML = '';
 
         if (!data || (data.vendas_a_vista === 0 && data.vendas_a_prazo === 0 && data.total_vendas === 0)) {
             // Mostra mensagem quando não há dados ou quando todos os valores são zero
@@ -681,15 +681,13 @@ async function loadVendas(page = 1) {
             warningDiv.classList.remove('d-none');
         } else {
             // Para outros erros, mostra mensagem de dados não disponíveis
-            const tbody = document.getElementById('vendasBody');
             tbody.innerHTML = '<tr><td colspan="2" class="text-center">Nenhum dado disponível para a competência selecionada.</td></tr>';
-            vendasTable.classList.remove('d-none');
             console.error("Erro ao carregar relatório de vendas:", error);
         }
     }
 }
 
-// Função simplificada para carregar relatório de vendas por acumulador
+// FunÃ§Ã£o simplificada para carregar relatÃ³rio de vendas por acumulador
 function loadVendasReport() {
     const competencia = document.getElementById('competenciaFilter').value;
 
@@ -699,7 +697,7 @@ function loadVendasReport() {
             renderVendasTable(data);
         })
         .catch(error => {
-            console.error('Erro ao carregar relatório:', error);
+            console.error('Erro ao carregar relatÃ³rio:', error);
             renderVendasTable(null, error.message);
         });
 }
@@ -708,53 +706,42 @@ function loadVendasReport() {
 
 // Função para renderizar a tabela de vendas agrupada por acumulador
 function renderVendasTable(data, errorMessage = null) {
-    const table = document.getElementById('salesTable');
-    const warning = document.getElementById('salesReportWarning');
-    const warningText = document.getElementById('salesReportWarningText');
+    const table = document.getElementById('relatorioAcumuladorTable');
+    const tbody = table.querySelector('tbody');
+    const tfoot = table.querySelector('tfoot');
+    const warning = document.getElementById('relatorioAcumuladorWarning');
+    const warningText = document.getElementById('relatorioAcumuladorWarningText');
 
     // Sempre mostra a tabela
     table.style.display = 'table';
     table.classList.remove('d-none');
 
-    // Esconde warning por padrão
+    // Limpa conteÃºdo anterior
+    tbody.innerHTML = '';
+    tfoot.innerHTML = '';
+
+    // Esconde warning por padrÃ£o
     warning.classList.add('d-none');
 
-    // Se há erro, oculta a tabela e mostra warning
+    // Se hÃ¡ erro, mostra warning mas MANTÃM a tabela visÃ­vel (apenas vazia)
     if (errorMessage) {
         if (errorMessage.includes("produto(s) sem acumulador")) {
-            // Oculta a tabela completamente quando há produtos sem acumulador
-            table.style.display = 'none';
-            table.classList.add('d-none');
             warningText.textContent = errorMessage;
             warning.classList.remove('d-none');
-        } else {
-            // Para outros erros, mostra tabela vazia
-            table.innerHTML = `
-                <thead class="table-dark">
-                    <tr><th>Acumulador</th><th>Total de Vendas</th><th>Ações</th></tr>
-                </thead>
-                <tbody></tbody>
-                <tfoot></tfoot>
-            `;
         }
+        // Em caso de erro, o tbody fica vazio, mas o cabeÃ§alho permanece visÃ­vel
         return;
     }
 
-    // Se não há dados, mostra tabela vazia
+    // Se nÃ£o hÃ¡ dados, mostra mensagem no tbody
     if (!data || !data.acumuladores || data.acumuladores.length === 0) {
-        table.innerHTML = `
-            <thead class="table-dark">
-                <tr><th>Acumulador</th><th>Total de Vendas</th><th>Ações</th></tr>
-            </thead>
-            <tbody>
-                <tr><td colspan="3" class="text-center">Nenhum dado disponível para a competência selecionada.</td></tr>
-            </tbody>
-            <tfoot></tfoot>
+        tbody.innerHTML = `
+            <tr><td colspan="3" class="text-center">Nenhum dado disponível para a competência selecionada.</td></tr>
         `;
         return;
     }
 
-    // Constrói corpo da tabela
+    // ConstrÃ³i corpo da tabela
     let bodyHtml = '';
 
     data.acumuladores.forEach((acumulador, index) => {
@@ -819,31 +806,22 @@ function renderVendasTable(data, errorMessage = null) {
         `;
     });
 
-    // Monta tabela completa
-    table.innerHTML = `
-        <thead class="table-dark">
-            <tr>
-                <th style="width: 50%;">Acumulador</th>
-                <th style="width: 30%;">Total de Vendas</th>
-                <th style="width: 20%;">Ações</th>
-            </tr>
-        </thead>
-        <tbody>
-            ${bodyHtml}
-        </tbody>
-        <tfoot class="table-group-divider fw-bold bg-primary text-white">
-            <tr>
-                <td colspan="2"><strong>Total Geral</strong></td>
-                <td><strong>${formatCurrency(data.total_geral)}</strong></td>
-            </tr>
-        </tfoot>
+    // Insere o conteÃºdo no tbody
+    tbody.innerHTML = bodyHtml;
+
+    // Atualiza o rodapÃ© com o total geral
+    tfoot.innerHTML = `
+        <tr>
+            <td colspan="2"><strong>Total Geral</strong></td>
+            <td><strong>${formatCurrency(data.total_geral)}</strong></td>
+        </tr>
     `;
 
-    // Adiciona classes CSS para melhor visualização
-    table.className = 'table table-hover table-bordered';
+    // Adiciona classes CSS para melhor visualizaÃ§Ã£o (garante que mantenha as classes caso tenham sido removidas)
+    table.className = 'table table-striped table-hover align-middle';
 }
 
-// Função para expandir/recolher detalhes de um acumulador
+// FunÃ§Ã£o para expandir/recolher detalhes de um acumulador
 function toggleDetalhes(index) {
     const detalhesRow = document.getElementById(`detalhes-${index}`);
     const button = document.querySelector(`button[onclick="toggleDetalhes(${index})"]`);
@@ -863,11 +841,11 @@ function toggleDetalhes(index) {
     }
 }
 
-// Função para sincronizar competências entre todos os relatórios
+// FunÃ§Ã£o para sincronizar competÃªncias entre todos os relatÃ³rios
 async function syncCompetencias(changedSelectId, newValue) {
-    console.log(`Sincronizando competência: ${changedSelectId} = ${newValue}`);
+    console.log(`Sincronizando competÃªncia: ${changedSelectId} = ${newValue}`);
 
-    // Mostra o overlay de carregamento e desabilita interações
+    // Mostra o overlay de carregamento e desabilita interaÃ§Ãµes
     showCompetenciaLoading();
 
     const competenciaSelects = [
@@ -887,34 +865,34 @@ async function syncCompetencias(changedSelectId, newValue) {
     });
 
     try {
-        // Desabilita o spinner automático para evitar conflitos
+        // Desabilita o spinner automÃ¡tico para evitar conflitos
         autoSpinnerEnabled = false;
 
-        // Recarrega todos os relatórios com a nova competência
+        // Recarrega todos os relatÃ³rios com a nova competÃªncia
         await Promise.all([
             loadVendas(),
             loadVendasReport(),
             loadCfopReport()
         ]);
 
-        // Esconde o overlay quando todos os relatórios terminarem de carregar
+        // Esconde o overlay quando todos os relatÃ³rios terminarem de carregar
         hideCompetenciaLoading();
     } catch (error) {
-        console.error('Erro ao recarregar relatórios:', error);
+        console.error('Erro ao recarregar relatÃ³rios:', error);
         // Esconde o overlay mesmo em caso de erro
         hideCompetenciaLoading();
     } finally {
-        // Reabilita o spinner automático
+        // Reabilita o spinner automÃ¡tico
         autoSpinnerEnabled = true;
     }
 }
 
-// Funções para controlar o overlay de carregamento
+// FunÃ§Ãµes para controlar o overlay de carregamento
 function showCompetenciaLoading() {
     const overlay = document.getElementById('competenciaLoadingOverlay');
     if (overlay) {
         overlay.style.display = 'flex';
-        // Desabilita scroll da página
+        // Desabilita scroll da pÃ¡gina
         document.body.style.overflow = 'hidden';
     }
 }
@@ -923,7 +901,7 @@ function hideCompetenciaLoading() {
     const overlay = document.getElementById('competenciaLoadingOverlay');
     if (overlay) {
         overlay.style.display = 'none';
-        // Reabilita scroll da página
+        // Reabilita scroll da pÃ¡gina
         document.body.style.overflow = '';
     }
 }
@@ -941,7 +919,7 @@ function resetCfopTableState(cfopTable, warningDiv) {
     // Oculta o aviso
     warningDiv.classList.add('d-none');
 
-    // Limpa o conteúdo da tabela
+    // Limpa o conteÃºdo da tabela
     const tbody = document.getElementById('cfopBody');
     const tfoot = cfopTable.querySelector('tfoot');
     if (tbody) tbody.innerHTML = '';
@@ -953,23 +931,23 @@ function resetCfopTableState(cfopTable, warningDiv) {
 async function loadCfopReport() {
     console.log('=== loadCfopReport chamada ===');
     const competencia = document.getElementById('competenciaCfopFilter').value;
-    console.log('Competência selecionada:', competencia);
+    console.log('CompetÃªncia selecionada:', competencia);
 
     const cfopTable = document.getElementById('cfopTable');
     const warningDiv = document.getElementById('cfopReportWarning');
     const warningText = document.getElementById('cfopReportWarningText');
 
-    // CORREÇÃO: Limpa completamente o estado anterior e garante visibilidade
+    // CORREÃÃO: Limpa completamente o estado anterior e garante visibilidade
     resetCfopTableState(cfopTable, warningDiv);
 
     try {
         // Adiciona timestamp para evitar cache
         const timestamp = new Date().getTime();
         const url = `/sped/relatorio_cfop?competencia=${competencia}&_t=${timestamp}`;
-        console.log('URL da requisição:', url);
+        console.log('URL da requisiÃ§Ã£o:', url);
 
         const data = await fetchApi(url);
-        console.log('Dados recebidos do relatório CFOP:', data);
+        console.log('Dados recebidos do relatÃ³rio CFOP:', data);
 
         const tbody = document.getElementById('cfopBody');
         const tfoot = cfopTable.querySelector('tfoot');
@@ -977,7 +955,7 @@ async function loadCfopReport() {
         tfoot.innerHTML = '';
 
         if (!data || data.length === 0) {
-            console.log('Nenhum dado encontrado para a competência');
+            console.log('Nenhum dado encontrado para a competÃªncia');
             tbody.innerHTML = '<tr><td colspan="2" class="text-center">Nenhum dado disponível para a competência selecionada.</td></tr>';
             cfopTable.classList.remove('d-none');
             return;
@@ -986,7 +964,7 @@ async function loadCfopReport() {
         let totalGeral = 0;
         console.log(`Processando ${data.length} CFOPs`);
 
-        // Preenche a tabela com os dados do relatório
+        // Preenche a tabela com os dados do relatÃ³rio
         data.forEach((item, index) => {
             console.log(`CFOP ${index + 1}: ${item.cfop} = R$ ${item.total}`);
             const row = tbody.insertRow();
@@ -1002,27 +980,32 @@ async function loadCfopReport() {
             <td>${formatCurrency(totalGeral)}</td>
         `;
 
-        console.log(`Total geral do relatório CFOP: R$ ${totalGeral}`);
-        // CORREÇÃO: Garante que a tabela esteja sempre visível após carregar dados
+        console.log(`Total geral do relatÃ³rio CFOP: R$ ${totalGeral}`);
+        // CORREÃÃO: Garante que a tabela esteja sempre visÃ­vel apÃ³s carregar dados
         cfopTable.style.display = 'table';
         cfopTable.classList.remove('d-none');
 
     } catch (error) {
         console.error('Erro ao carregar relatório CFOP:', error);
 
+        const tbody = document.getElementById('cfopBody');
+        const tfoot = cfopTable.querySelector('tfoot');
+
+        // Limpa o conteúdo da tabela
+        tbody.innerHTML = '';
+        tfoot.innerHTML = '';
+
         if (error.message.includes("produto(s) sem acumulador")) {
             console.log('Erro: produtos sem acumulador detectados');
-            cfopTable.style.display = 'none';
-            cfopTable.classList.add('d-none');
+            // Mantém a tabela visível (cabeçalho) e mostra o aviso
+            cfopTable.style.display = 'table';
+            cfopTable.classList.remove('d-none');
             warningText.textContent = error.message;
             warningDiv.classList.remove('d-none');
         } else {
             console.log('Erro genérico, mostrando tabela vazia');
-            const tbody = document.getElementById('cfopBody');
-            const tfoot = cfopTable.querySelector('tfoot');
             tbody.innerHTML = '<tr><td colspan="2" class="text-center">Erro ao carregar dados. Tente novamente.</td></tr>';
-            tfoot.innerHTML = '';
-            // CORREÇÃO: Garante que a tabela esteja visível mesmo com erro genérico
+            // Garante que a tabela esteja visível mesmo com erro genérico
             cfopTable.style.display = 'table';
             cfopTable.classList.remove('d-none');
         }
@@ -1034,12 +1017,12 @@ async function loadCompetencias() {
         const competencias = await fetchApi('/sped/competencias');
 
         if (!competencias || competencias.length === 0) {
-            // Inicializa todas as abas com mensagem de dados não disponíveis
+            // Inicializa todas as abas com mensagem de dados nÃ£o disponÃ­veis
             initializeAllReportsWithMessage();
             return;
         }
 
-        // Preenche todos os selects de competência
+        // Preenche todos os selects de competÃªncia
         const selects = [
             'competenciaVendasFilter',
             'competenciaFilter',
@@ -1059,21 +1042,21 @@ async function loadCompetencias() {
             }
         });
 
-        // Carrega relatórios iniciais
+        // Carrega relatÃ³rios iniciais
         if (competencias.length > 0) {
             loadVendas();
             loadVendasReport();
             loadCfopReport();
         }
     } catch (error) {
-        console.error('Erro ao carregar competências:', error);
-        renderVendasTable(null, 'Erro ao carregar competências');
+        console.error('Erro ao carregar competÃªncias:', error);
+        renderVendasTable(null, 'Erro ao carregar competÃªncias');
     }
 }
 
 
 
-// Função para carregar todos os relatórios
+// FunÃ§Ã£o para carregar todos os relatÃ³rios
 async function loadAllReports() {
     try {
         await Promise.all([
@@ -1082,14 +1065,14 @@ async function loadAllReports() {
             loadCfopReport()
         ]);
     } catch (error) {
-        console.error('Erro ao carregar relatórios:', error);
+        console.error('Erro ao carregar relatÃ³rios:', error);
 
-        // Em caso de erro, inicializa todas as abas com mensagem padrão
+        // Em caso de erro, inicializa todas as abas com mensagem padrÃ£o
         initializeAllReportsWithMessage();
     }
 }
 
-// Função simples para garantir visibilidade da tabela
+// FunÃ§Ã£o simples para garantir visibilidade da tabela
 function showSalesTable() {
     const table = document.getElementById('salesTable');
     if (table) {
@@ -1098,7 +1081,7 @@ function showSalesTable() {
     }
 }
 
-// Função para inicializar todas as abas de relatórios com mensagem padrão
+// FunÃ§Ã£o para inicializar todas as abas de relatÃ³rios com mensagem padrÃ£o
 function initializeAllReportsWithMessage() {
     // Inicializa aba de vendas
     const vendasBody = document.getElementById('vendasBody');
@@ -1112,8 +1095,13 @@ function initializeAllReportsWithMessage() {
 
     // Inicializa aba de CFOP
     const cfopBody = document.getElementById('cfopBody');
+    const empresaSelecionada = document.body.dataset.empresaSelecionada === 'true';
     if (cfopBody) {
-        cfopBody.innerHTML = '<tr><td colspan="2" class="text-center">Nenhum dado disponível para a competência selecionada.</td></tr>';
+        if (empresaSelecionada) {
+            cfopBody.innerHTML = '<tr><td colspan="2" class="text-center">Nenhum dado disponível para a competência selecionada.</td></tr>';
+        } else {
+            cfopBody.innerHTML = '';
+        }
         const cfopTable = document.getElementById('cfopTable');
         if (cfopTable) {
             cfopTable.classList.remove('d-none');
@@ -1141,7 +1129,7 @@ function setupCompetenciaNavigation(selectId, prevBtnId, nextBtnId) {
             // Sincroniza com outros selects
             syncCompetencias(selectId, select.value);
 
-            // Carrega todos os relatórios
+            // Carrega todos os relatÃ³rios
             loadAllReports();
         }
     });
@@ -1156,7 +1144,7 @@ function setupCompetenciaNavigation(selectId, prevBtnId, nextBtnId) {
             // Sincroniza com outros selects
             syncCompetencias(selectId, select.value);
 
-            // Carrega todos os relatórios
+            // Carrega todos os relatÃ³rios
             loadAllReports();
         }
     });
@@ -1165,21 +1153,21 @@ function setupCompetenciaNavigation(selectId, prevBtnId, nextBtnId) {
         // Sincroniza com outros selects
         syncCompetencias(selectId, select.value);
 
-        // CORREÇÃO: Garante que a tabela esteja visível antes de carregar
+        // CORREÃÃO: Garante que a tabela esteja visÃ­vel antes de carregar
         ensureAccumulatorTableVisible();
 
-        // Carrega todos os relatórios
+        // Carrega todos os relatÃ³rios
         loadAllReports();
     });
 }
 
 async function initializeSpedPage() {
-    console.log('Iniciando página SPED...');
+    console.log('Iniciando pÃ¡gina SPED...');
 
-    // Inicializa todas as abas com mensagem padrão primeiro
+    // Inicializa todas as abas com mensagem padrÃ£o primeiro
     initializeAllReportsWithMessage();
 
-    // Carrega dados básicos
+    // Carrega dados bÃ¡sicos
     await Promise.all([
         loadCfops(),
         loadAcumuladores(),
@@ -1192,21 +1180,21 @@ async function initializeSpedPage() {
     // Carrega produtos
     await loadProdutos(1);
 
-    console.log('Página SPED inicializada');
+    console.log('PÃ¡gina SPED inicializada');
 }
 
 
 
-// Flag para evitar múltiplas configurações
+// Flag para evitar mÃºltiplas configuraÃ§Ãµes
 let filterListenersConfigured = false;
 
-// Função para configurar os event listeners dos filtros
+// FunÃ§Ã£o para configurar os event listeners dos filtros
 function setupFilterListeners() {
     console.log('Configurando event listeners dos filtros...');
 
-    // Se já foi configurado, remove a flag para reconfigurar
+    // Se jÃ¡ foi configurado, remove a flag para reconfigurar
     if (filterListenersConfigured) {
-        console.log('Listeners já configurados, pulando...');
+        console.log('Listeners jÃ¡ configurados, pulando...');
         return;
     }
 
@@ -1223,7 +1211,7 @@ function setupFilterListeners() {
         console.log('Listener de pesquisa de produtos configurado');
     }
 
-    // Método 1: Event delegation no container dos filtros
+    // MÃ©todo 1: Event delegation no container dos filtros
     const filterContainer = document.querySelector('.btn-group[role="group"]');
     if (filterContainer) {
         console.log('Container de filtros encontrado, adicionando event delegation');
@@ -1253,7 +1241,7 @@ function setupFilterListeners() {
         });
     }
 
-    // Método 2: Listeners diretos nos radio buttons
+    // MÃ©todo 2: Listeners diretos nos radio buttons
     const acumuladorFilters = document.querySelectorAll('input[name="acumuladorFilter"]');
     console.log('Filtros de acumulador encontrados:', acumuladorFilters.length);
 
@@ -1273,7 +1261,7 @@ function setupFilterListeners() {
         });
     });
 
-    // Método 3: Listeners nas labels (Bootstrap usa labels para estilizar)
+    // MÃ©todo 3: Listeners nas labels (Bootstrap usa labels para estilizar)
     const filterLabels = document.querySelectorAll('label[for="todos"], label[for="cadastrados"], label[for="naoCadastrados"]');
     console.log('Labels de filtro encontradas:', filterLabels.length);
     filterLabels.forEach(label => {
@@ -1282,8 +1270,8 @@ function setupFilterListeners() {
             const radio = document.getElementById(radioId);
             console.log('LABEL CLICK - Label clicada para:', radioId, 'Radio checked antes:', radio?.checked);
 
-            // IMPORTANTE: Sempre recarrega, mesmo se o radio já estava marcado
-            // Isso resolve o problema de clicar no filtro já selecionado
+            // IMPORTANTE: Sempre recarrega, mesmo se o radio jÃ¡ estava marcado
+            // Isso resolve o problema de clicar no filtro jÃ¡ selecionado
             setTimeout(() => {
                 console.log('Radio checked depois:', radio?.checked);
                 loadProdutos(1);
@@ -1299,10 +1287,10 @@ function setupFilterListeners() {
     filterListenersConfigured = true;
     console.log('Event listeners dos filtros configurados com sucesso!');
 
-    // Debug: Listener global para verificar todos os cliques na área de filtros
+    // Debug: Listener global para verificar todos os cliques na Ã¡rea de filtros
     document.addEventListener('click', (e) => {
         if (e.target.closest('.btn-group[role="group"]')) {
-            console.log('GLOBAL CLICK detectado na área de filtros');
+            console.log('GLOBAL CLICK detectado na Ã¡rea de filtros');
             console.log('Target:', e.target.tagName, e.target.textContent, e.target.className);
             console.log('Filtro atual selecionado:', document.querySelector('input[name="acumuladorFilter"]:checked')?.value);
         }
@@ -1310,12 +1298,12 @@ function setupFilterListeners() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('DOM carregado, iniciando aplicação...');
+    console.log('DOM carregado, iniciando aplicaÃ§Ã£o...');
 
-    // Inicializa a página (já configura os listeners internamente)
+    // Inicializa a pÃ¡gina (jÃ¡ configura os listeners internamente)
     await initializeSpedPage();
 
-    // Adiciona listener para carregar dados quando os modais são abertos
+    // Adiciona listener para carregar dados quando os modais sÃ£o abertos
     const acumuladoresModal = document.getElementById('acumuladoresModal');
     if (acumuladoresModal) {
         acumuladoresModal.addEventListener('show.bs.modal', () => {
@@ -1323,7 +1311,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // Adiciona listener para quando a aba de produtos é mostrada
+    // Adiciona listener para quando a aba de produtos Ã© mostrada
     const produtosTab = document.getElementById('produtos-tab');
     if (produtosTab) {
         produtosTab.addEventListener('shown.bs.tab', () => {
@@ -1335,7 +1323,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // Listener simples para aba de relatório por acumulador
+    // Listener simples para aba de relatÃ³rio por acumulador
     const relatorioAcumuladorTab = document.getElementById('relatorio-acumulador-tab');
     if (relatorioAcumuladorTab) {
         relatorioAcumuladorTab.addEventListener('shown.bs.tab', () => {
@@ -1344,11 +1332,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // Event listener para aba do relatório por CFOP
+    // Event listener para aba do relatÃ³rio por CFOP
     const relatorioCfopTab = document.getElementById('relatorio-cfop-tab');
     if (relatorioCfopTab) {
         relatorioCfopTab.addEventListener('shown.bs.tab', () => {
-            console.log('Aba relatório CFOP mostrada, carregando dados...');
+            console.log('Aba relatÃ³rio CFOP mostrada, carregando dados...');
             loadCfopReport();
         });
     }
@@ -1363,7 +1351,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         searchCfops.addEventListener('input', debounce(() => loadCfops(), 300));
     }
 
-    // Event listeners para botões de modal
+    // Event listeners para botÃµes de modal
     const btnNovoAcumulador = document.getElementById('btnNovoAcumulador');
     if (btnNovoAcumulador) {
         btnNovoAcumulador.addEventListener('click', () => {
@@ -1416,7 +1404,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // Event listeners para formulários
+    // Event listeners para formulÃ¡rios
     const cfopForm = document.getElementById('cfopForm');
     if (cfopForm) {
         cfopForm.addEventListener('submit', async (e) => {
@@ -1424,23 +1412,44 @@ document.addEventListener('DOMContentLoaded', async () => {
             await saveCfop();
         });
     }
+}); // Fecha o bloco DOMContentLoaded principal anterior
+
+// Bloco separado para listeners críticos
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('Sped.js: Inicializando event listeners do botão CFOP...');
 
     const saveCfopButton = document.getElementById('saveCfopButton');
     if (saveCfopButton) {
-        saveCfopButton.addEventListener('click', async (e) => {
+        console.log('Sped.js: Botão saveCfopButton encontrado!');
+        // Remove listeners antigos para evitar duplicação (clone e substitui)
+        const newBtn = saveCfopButton.cloneNode(true);
+        saveCfopButton.parentNode.replaceChild(newBtn, saveCfopButton);
+
+        newBtn.addEventListener('click', async (e) => {
+            console.log('Sped.js: Botão saveCfopButton clicado!');
             e.preventDefault();
             await saveCfop();
         });
+    } else {
+        console.error('Sped.js: Botão saveCfopButton NÃO encontrado!');
     }
 
     const produtoForm = document.getElementById('produtoForm');
     if (produtoForm) {
-        produtoForm.addEventListener('submit', async (e) => {
+        // Remove listeners antigos
+        const newForm = produtoForm.cloneNode(true);
+        produtoForm.parentNode.replaceChild(newForm, produtoForm);
+
+        newForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             await saveProduto();
         });
     }
+});
 
+
+// Listeners para Acumuladores e Importação
+document.addEventListener('DOMContentLoaded', () => {
     const acumuladorForm = document.getElementById('acumuladorForm');
     if (acumuladorForm) {
         acumuladorForm.addEventListener('submit', saveAcumulador);
@@ -1455,6 +1464,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 showToast('Por favor, selecione um arquivo SPED.', 'warning');
                 return;
             }
+
+            // Desabilita o botão para evitar cliques duplos
+            submitSpedButton.disabled = true;
+            const originalButtonText = submitSpedButton.innerHTML;
+            submitSpedButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Importando...';
 
             showSpinner();
             try {
@@ -1471,34 +1485,72 @@ document.addEventListener('DOMContentLoaded', async () => {
                 showToast(data.message || data.error, data.success ? 'success' : 'danger');
                 if (data.success) {
                     console.log('Importação bem-sucedida, recarregando todos os dados...');
-                    // Recarrega os dados após importação bem-sucedida
-                    await Promise.all([
-                        loadCompetencias(),
-                        loadProdutos(1),
-                        loadAcumuladores()
-                    ]);
 
-                    // Força a atualização de todos os relatórios após um pequeno delay
-                    setTimeout(async () => {
-                        console.log('Forçando atualização dos relatórios...');
+                    // Verifica se a empresa mudou ou se é uma nova empresa
+                    const empresaSelect = document.getElementById('empresaSelect');
+                    const currentEmpresaId = empresaSelect ? empresaSelect.value : '';
+
+                    if (data.empresa_id && String(data.empresa_id) !== String(currentEmpresaId)) {
+                        showToast('Nova empresa identificada. Atualizando a página...', 'success');
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1500);
+                        return;
+                    }
+
+                    // Desabilita toasts globais temporariamente para evitar confusão
+                    // Os warnings de "produtos sem acumulador" serão exibidos na própria página
+                    const originalSuppress = [...SUPPRESS_TOAST_ERROR_MESSAGES];
+                    SUPPRESS_TOAST_ERROR_MESSAGES.push('Erro ao carregar');
+
+                    try {
+                        // Recarrega os dados após importação bem-sucedida
                         await Promise.all([
-                            loadVendas(),
-                            loadVendasReport(),
-                            loadCfopReport()
+                            loadCompetencias(),
+                            loadProdutos(1),
+                            loadAcumuladores()
                         ]);
-                    }, 1000);
+
+                        // Força a atualização de todos os relatórios após um pequeno delay
+                        setTimeout(async () => {
+                            console.log('Forçando atualização dos relatórios...');
+                            try {
+                                await Promise.all([
+                                    loadVendas(),
+                                    loadVendasReport(),
+                                    loadCfopReport()
+                                ]);
+                            } catch (e) {
+                                // Ignora erros de relatório após importação - warnings são exibidos na página
+                                console.log('Relatórios atualizados (alguns podem requerer configuração de acumuladores)');
+                            }
+                        }, 1000);
+                    } finally {
+                        // Restaura lista original de supressão
+                        SUPPRESS_TOAST_ERROR_MESSAGES.length = 0;
+                        SUPPRESS_TOAST_ERROR_MESSAGES.push(...originalSuppress);
+                    }
                 }
                 fileInput.value = ''; // Limpa o input do arquivo
             } catch (error) {
-                console.error('Erro ao importar arquivo:', error);
-                showToast('Erro ao importar o arquivo. Verifique o console para mais detalhes.', 'danger');
+                if (error instanceof Response) {
+                    error.text().then(text => {
+                        console.error('Erro ao importar arquivo (resposta):', text);
+                    });
+                } else {
+                    console.error('Erro ao importar arquivo:', error);
+                }
+                // showToast('Erro ao importar o arquivo. Verifique o console para mais detalhes.', 'danger');
             } finally {
                 hideSpinner();
+                // Reabilita o botão
+                submitSpedButton.disabled = false;
+                submitSpedButton.innerHTML = originalButtonText;
             }
         });
     }
 
-    // Event listeners para botões de exclusão e edição
+    // Event listeners para botÃµes de exclusÃ£o e ediÃ§Ã£o
     document.addEventListener('click', async (e) => {
         if (e.target.closest('.edit-cfop')) {
             const button = e.target.closest('.edit-cfop');
@@ -1526,7 +1578,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 
-// Listeners com sincronização de competências
+// Listeners com sincronizaÃ§Ã£o de competÃªncias
 const competenciaFilter = document.getElementById('competenciaFilter');
 if (competenciaFilter) {
     competenciaFilter.addEventListener('change', () => {
@@ -1548,19 +1600,19 @@ if (competenciaVendasFilter) {
     });
 }
 
-// CORREÇÃO: Monitora a visibilidade da tabela de CFOP
+// CORREÃÃO: Monitora a visibilidade da tabela de CFOP
 function startCfopTableMonitoring() {
     const cfopTable = document.getElementById('cfopTable');
     if (!cfopTable) return;
 
-    // Verifica a cada 2 segundos se a tabela está visível
+    // Verifica a cada 2 segundos se a tabela estÃ¡ visÃ­vel
     setInterval(() => {
         const isHidden = cfopTable.classList.contains('d-none') ||
             cfopTable.style.display === 'none' ||
             cfopTable.offsetParent === null;
 
         if (isHidden) {
-            console.warn('DETECTADO: Tabela de CFOP está oculta! Forçando visibilidade...');
+            console.warn('DETECTADO: Tabela de CFOP estÃ¡ oculta! ForÃ§ando visibilidade...');
             ensureCfopTableVisible();
         }
     }, 2000);
@@ -1570,20 +1622,20 @@ function startCfopTableMonitoring() {
 document.addEventListener('DOMContentLoaded', () => {
     startCfopTableMonitoring();
 
-    // Handler para botão de classificação automática
+    // Handler para botÃ£o de classificaÃ§Ã£o automÃ¡tica
     const btnClassificarAuto = document.getElementById('btnClassificarAuto');
     if (btnClassificarAuto) {
         btnClassificarAuto.addEventListener('click', () => abrirModalClassificacao());
     }
 
-    // Handler para aprovar todas as sugestões
+    // Handler para aprovar todas as sugestÃµes
     const btnAprovarTodas = document.getElementById('btnAprovarTodas');
     if (btnAprovarTodas) {
         btnAprovarTodas.addEventListener('click', () => aprovarTodasSugestoes());
     }
 });
 
-// Função para abrir modal de classificação automática
+// FunÃ§Ã£o para abrir modal de classificaÃ§Ã£o automÃ¡tica
 async function abrirModalClassificacao() {
     const modal = new bootstrap.Modal(document.getElementById('classificacaoAutoModal'));
     const loadingDiv = document.getElementById('classificacaoLoading');
@@ -1620,7 +1672,7 @@ async function abrirModalClassificacao() {
                 contadorSpan.textContent = '';
                 document.getElementById('btnAprovarTodas').classList.add('d-none');
             } else {
-                // Armazena sugestões globalmente
+                // Armazena sugestÃµes globalmente
                 window.sugestoesPendentes = result.sugestoes;
 
                 alertaDiv.className = 'alert alert-success';
@@ -1632,7 +1684,7 @@ async function abrirModalClassificacao() {
                 // Preenche a tabela do modal
                 renderizarTabelaClassificacao();
 
-                // Atualiza a tabela de produtos principal para mostrar os ícones
+                // Atualiza a tabela de produtos principal para mostrar os Ã­cones
                 loadProdutos(currentPage);
             }
         } else {
@@ -1649,7 +1701,7 @@ async function abrirModalClassificacao() {
     }
 }
 
-// Renderiza a tabela de sugestões no modal
+// Renderiza a tabela de sugestÃµes no modal
 function renderizarTabelaClassificacao() {
     const tbody = document.getElementById('classificacaoBody');
     tbody.innerHTML = '';
@@ -1693,7 +1745,7 @@ function renderizarTabelaClassificacao() {
     atualizarContadorModal();
 }
 
-// Aprovar sugestão no modal
+// Aprovar sugestÃ£o no modal
 async function aprovarSugestaoModal(codigoItem, acumulador) {
     try {
         const response = await fetch('/sped/aprovar_sugestao', {
@@ -1718,7 +1770,7 @@ async function aprovarSugestaoModal(codigoItem, acumulador) {
     }
 }
 
-// Rejeitar sugestão no modal
+// Rejeitar sugestÃ£o no modal
 function rejeitarSugestaoModal(codigoItem) {
     window.sugestoesPendentes = window.sugestoesPendentes.filter(s => s.codigo_item !== codigoItem);
     const row = document.getElementById(`sug-${codigoItem}`);
@@ -1726,7 +1778,7 @@ function rejeitarSugestaoModal(codigoItem) {
     atualizarContadorModal();
 }
 
-// Aprovar todas as sugestões
+// Aprovar todas as sugestÃµes
 async function aprovarTodasSugestoes() {
     const sugestoes = [...window.sugestoesPendentes];
     let aprovadas = 0;
@@ -1763,24 +1815,24 @@ function atualizarContadorModal() {
     const btnAprovarTodas = document.getElementById('btnAprovarTodas');
 
     if (window.sugestoesPendentes.length === 0) {
-        contadorSpan.textContent = 'Todas as sugestões processadas';
+        contadorSpan.textContent = 'Todas as sugestÃµes processadas';
         alertaDiv.className = 'alert alert-info';
-        alertaDiv.innerHTML = '<i class="bi bi-check-circle me-2"></i>Todas as sugestões foram processadas!';
+        alertaDiv.innerHTML = '<i class="bi bi-check-circle me-2"></i>Todas as sugestÃµes foram processadas!';
         btnAprovarTodas.classList.add('d-none');
     } else {
         contadorSpan.textContent = `${window.sugestoesPendentes.length} produtos pendentes`;
     }
 }
 
-// Variável global para sugestões pendentes
+// VariÃ¡vel global para sugestÃµes pendentes
 window.sugestoesPendentes = [];
 
-// Função para verificar se há sugestão para um produto
+// FunÃ§Ã£o para verificar se hÃ¡ sugestÃ£o para um produto
 function getSugestao(codigoItem) {
     return window.sugestoesPendentes.find(s => s.codigo_item === codigoItem);
 }
 
-// Função para aprovar sugestão
+// FunÃ§Ã£o para aprovar sugestÃ£o
 async function aprovarSugestao(codigoItem, acumulador) {
     try {
         const response = await fetch('/sped/aprovar_sugestao', {
@@ -1792,17 +1844,17 @@ async function aprovarSugestao(codigoItem, acumulador) {
         const result = await response.json();
 
         if (result.success) {
-            // Remove a sugestão da lista de pendentes
+            // Remove a sugestÃ£o da lista de pendentes
             window.sugestoesPendentes = window.sugestoesPendentes.filter(s => s.codigo_item !== codigoItem);
             atualizarBotaoClassificar();
 
-            // Atualiza apenas a linha localmente ao invés de recarregar toda a tabela
+            // Atualiza apenas a linha localmente ao invÃ©s de recarregar toda a tabela
             const row = document.querySelector(`tr[data-codigo="${codigoItem}"]`);
             if (row) {
                 // Remove o destaque de aviso
                 row.classList.remove('table-warning');
 
-                // Substitui o conteúdo da célula de acumulador pelo select padrão
+                // Substitui o conteÃºdo da cÃ©lula de acumulador pelo select padrÃ£o
                 const acumuladorCell = row.querySelector('td:last-child');
                 if (acumuladorCell) {
                     acumuladorCell.innerHTML = `
@@ -1818,7 +1870,7 @@ async function aprovarSugestao(codigoItem, acumulador) {
                 }
             }
 
-            // Recarrega os relatórios
+            // Recarrega os relatÃ³rios
             await Promise.all([
                 loadVendasReport(),
                 loadCfopReport()
@@ -1831,15 +1883,15 @@ async function aprovarSugestao(codigoItem, acumulador) {
     }
 }
 
-// Função para rejeitar sugestão
+// FunÃ§Ã£o para rejeitar sugestÃ£o
 function rejeitarSugestao(codigoItem) {
     window.sugestoesPendentes = window.sugestoesPendentes.filter(s => s.codigo_item !== codigoItem);
-    showToast(`✗ Sugestão rejeitada`, 'warning');
+    showToast(`â SugestÃ£o rejeitada`, 'warning');
     atualizarBotaoClassificar();
     loadProdutos(currentPage);
 }
 
-// Atualiza o botão de classificar
+// Atualiza o botÃ£o de classificar
 function atualizarBotaoClassificar() {
     const btn = document.getElementById('btnClassificarAuto');
     if (btn) {
@@ -1848,14 +1900,14 @@ function atualizarBotaoClassificar() {
             btn.classList.remove('btn-success');
             btn.classList.add('btn-warning');
         } else {
-            btn.innerHTML = '<i class="bi bi-magic me-2"></i>Classificar Automático';
+            btn.innerHTML = '<i class="bi bi-magic me-2"></i>Classificar AutomÃ¡tico';
             btn.classList.remove('btn-warning');
             btn.classList.add('btn-success');
         }
     }
 }
 
-// Função para analisar inconsistências
+// FunÃ§Ã£o para analisar inconsistÃªncias
 async function analisarInconsistencias() {
     const modal = new bootstrap.Modal(document.getElementById('inconsistenciasModal'));
     const loadingDiv = document.getElementById('inconsistenciasLoading');
@@ -1896,7 +1948,7 @@ async function analisarInconsistencias() {
 
                 // Preenche a tabela - mostra apenas o produto que precisa ser corrigido
                 result.inconsistencias.forEach((inc, index) => {
-                    // Mostra o produto 2 com sugestão de usar o acumulador do produto 1
+                    // Mostra o produto 2 com sugestÃ£o de usar o acumulador do produto 1
                     const tr = document.createElement('tr');
                     tr.className = 'table-warning';
                     tr.id = `inc-${index}`;
@@ -1946,7 +1998,7 @@ async function analisarInconsistencias() {
     }
 }
 
-// Handler para o botão de análise de inconsistências
+// Handler para o botÃ£o de anÃ¡lise de inconsistÃªncias
 document.addEventListener('DOMContentLoaded', () => {
     const btnInconsistencias = document.getElementById('btnAnalisarInconsistencias');
     if (btnInconsistencias) {
@@ -1954,7 +2006,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Função para trocar acumulador de um produto (usado no modal de inconsistências)
+// FunÃ§Ã£o para trocar acumulador de um produto (usado no modal de inconsistÃªncias)
 async function trocarAcumuladorInconsistencia(codigoProduto, novoAcumulador, index) {
     try {
         const response = await fetch('/sped/produtos/atualizar_acumulador', {
@@ -1966,7 +2018,7 @@ async function trocarAcumuladorInconsistencia(codigoProduto, novoAcumulador, ind
         const result = await response.json();
 
         if (result.success) {
-            // Remove a linha da inconsistência
+            // Remove a linha da inconsistÃªncia
             const tr = document.getElementById(`inc-${index}`);
             if (tr) tr.remove();
 
@@ -1978,7 +2030,7 @@ async function trocarAcumuladorInconsistencia(codigoProduto, novoAcumulador, ind
             if (linhasRestantes === 0) {
                 const alertaDiv = document.getElementById('inconsistenciasAlerta');
                 alertaDiv.className = 'alert alert-success';
-                alertaDiv.innerHTML = '<i class="bi bi-check-circle me-2"></i>Todas as inconsistências foram resolvidas!';
+                alertaDiv.innerHTML = '<i class="bi bi-check-circle me-2"></i>Todas as inconsistÃªncias foram resolvidas!';
                 contadorSpan.textContent = '';
             } else {
                 contadorSpan.textContent = `${linhasRestantes} produtos restantes`;
@@ -1993,9 +2045,9 @@ async function trocarAcumuladorInconsistencia(codigoProduto, novoAcumulador, ind
     }
 }
 
-// Função para ignorar uma inconsistência (remove da lista sem alterar)
+// FunÃ§Ã£o para ignorar uma inconsistÃªncia (remove da lista sem alterar)
 function ignorarInconsistencia(index) {
-    // Remove a linha da inconsistência
+    // Remove a linha da inconsistÃªncia
     const tr = document.getElementById(`inc-${index}`);
     if (tr) tr.remove();
 
@@ -2007,9 +2059,32 @@ function ignorarInconsistencia(index) {
     if (linhasRestantes === 0) {
         const alertaDiv = document.getElementById('inconsistenciasAlerta');
         alertaDiv.className = 'alert alert-success';
-        alertaDiv.innerHTML = '<i class="bi bi-check-circle me-2"></i>Todas as inconsistências foram processadas!';
+        alertaDiv.innerHTML = '<i class="bi bi-check-circle me-2"></i>Todas as inconsistÃªncias foram processadas!';
         contadorSpan.textContent = '';
     } else {
         contadorSpan.textContent = `${linhasRestantes} produtos restantes`;
     }
 }
+
+// NOTA: O listener de importação SPED já está registrado no DOMContentLoaded (linha ~1440)
+// Listener duplicado foi removido para evitar requisições duplas.
+
+// --- Toggle Fullscreen ---
+const toggleFullscreenBtn = document.getElementById('toggleFullscreen');
+if (toggleFullscreenBtn) {
+    toggleFullscreenBtn.addEventListener('click', () => {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(err => {
+                console.error('Erro ao tentar entrar em tela cheia:', err);
+            });
+            toggleFullscreenBtn.innerHTML = '<i class="bi bi-fullscreen-exit"></i>';
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+                toggleFullscreenBtn.innerHTML = '<i class="bi bi-arrows-fullscreen"></i>';
+            }
+        }
+    });
+}
+
+

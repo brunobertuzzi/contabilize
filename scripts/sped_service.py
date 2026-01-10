@@ -13,10 +13,12 @@ from scripts.database import (
     Acumulador,
     Cfop,
     DocumentoFiscalSped,
+    Empresa,
     ProdutoSped,
     VendaSped,
     get_db,
 )
+from scripts.empresa_service import get_empresa_id_from_session, get_or_create_empresa
 from scripts.validators import (
     ValidationError,
     log_security_event,
@@ -33,8 +35,31 @@ logger = logging.getLogger(__name__)
 
 class SpedService:
     @staticmethod
-    def import_sped_file(file) -> Tuple[bool, str]:
-        """Processa um arquivo SPED e importa os dados, com lógica de parsing corrigida e desduplicação."""
+    def import_sped_file(
+        file, empresa_selecionada_id: Optional[int] = None
+    ) -> Tuple[bool, str, Optional[int]]:
+        """
+        Processa um arquivo SPED Fiscal e importa os dados para o banco de dados.
+
+        Este método realiza a leitura linha a linha do arquivo SPED, extrai informações
+        de produtos (registro 0200), documentos fiscais de saída (registro C100) e 
+        itens de venda (registro C170), e persiste no banco de dados associado à 
+        empresa identificada no arquivo ou à empresa selecionada.
+
+        Args:
+            file: Objeto de arquivo SPED a ser processado (FileStorage do Flask)
+            empresa_selecionada_id: ID da empresa selecionada (opcional). Se fornecido,
+                                   valida se o arquivo pertence a esta empresa.
+
+        Returns:
+            Tupla contendo:
+                - bool: True se a importação foi bem-sucedida, False caso contrário
+                - str: Mensagem descritiva do resultado da operação
+                - Optional[int]: ID da empresa associada aos dados importados, ou None em caso de erro
+
+        Raises:
+            Exception: Em caso de erro fatal durante o processamento do arquivo
+        """
         try:
             logger.info(f"Iniciando importação do arquivo SPED: {file.filename}")
 
@@ -49,14 +74,11 @@ class SpedService:
                     return 0.0
 
             # Otimização: Processar o arquivo como um stream (linha por linha)
-            # para evitar carregar arquivos grandes inteiramente na memória.
             file.seek(0)
             try:
-                # Tenta decodificar como latin-1, que é comum em arquivos fiscais no Brasil
                 lines = TextIOWrapper(file, encoding="latin-1")
             except UnicodeDecodeError:
                 file.seek(0)
-                # Fallback para utf-8 ignorando erros
                 lines = TextIOWrapper(file, encoding="utf-8", errors="ignore")
 
             produtos_raw, vendas_raw, documentos_raw, erros, record_types = (
@@ -66,8 +88,16 @@ class SpedService:
                 [],
                 Counter(),
             )
-            doc_info = {}
+            info_documento = {}
             current_doc_fiscal = None
+
+            # Dados da empresa do arquivo SPED (extraídos do registro 0000)
+            empresa_sped = {
+                "cnpj": None,
+                "razao_social": None,
+                "inscricao_estadual": None,
+                "uf": None,
+            }
 
             for num_linha, line in enumerate(lines, 1):
                 try:
@@ -80,9 +110,39 @@ class SpedService:
                     reg_type = fields[1]
                     record_types[reg_type] += 1
 
-                    if reg_type == "C100":
-                        # Reset doc_info para o novo documento
-                        doc_info = {}
+                    # Registro 0000 - Abertura do arquivo SPED (contém dados da empresa)
+                    if reg_type == "0000":
+                        if len(fields) >= 9:
+                            # Campos do registro 0000:
+                            # |0000|COD_VER|COD_FIN|DT_INI|DT_FIN|NOME|CNPJ|CPF|UF|IE|...
+                            empresa_sped["razao_social"] = (
+                                fields[6].strip()
+                                if len(fields) > 6 and fields[6]
+                                else "Empresa Desconhecida"
+                            )
+                            empresa_sped["cnpj"] = (
+                                fields[7].strip()
+                                if len(fields) > 7 and fields[7]
+                                else None
+                            )
+                            empresa_sped["uf"] = (
+                                fields[9].strip()
+                                if len(fields) > 9 and fields[9]
+                                else None
+                            )
+                            empresa_sped["inscricao_estadual"] = (
+                                fields[10].strip()
+                                if len(fields) > 10 and fields[10]
+                                else None
+                            )
+
+                            logger.info(
+                                f"Empresa do SPED: {empresa_sped['razao_social']} (CNPJ: {empresa_sped['cnpj']})"
+                            )
+
+                    elif reg_type == "C100":
+                        # Reset info_documento para o novo documento
+                        info_documento = {}
                         # Verifica se é um documento de saída e se o campo de data não está vazio
                         if len(fields) > 13 and fields[2] == "1" and fields[10].strip():
                             current_doc_fiscal = {
@@ -94,8 +154,8 @@ class SpedService:
                                 "ind_pagamento": fields[13].strip(),
                             }
                             documentos_raw.append(current_doc_fiscal)
-                            # Mantém doc_info para C170 que não têm essa informação
-                            doc_info = {"data": current_doc_fiscal["data"]}
+                            # Mantém info_documento para C170 que não têm essa informação
+                            info_documento = {"data": current_doc_fiscal["data"]}
                         else:
                             current_doc_fiscal = None
 
@@ -170,80 +230,154 @@ class SpedService:
             )
 
             if not documentos and not vendas:
-                # ... (error message logic remains the same)
                 return (
                     False,
                     "Nenhum documento fiscal de saída ou item de venda válido encontrado.",
+                    None,
+                )
+
+            # Validar CNPJ do arquivo
+            if not empresa_sped.get("cnpj"):
+                return (
+                    False,
+                    "Não foi possível identificar o CNPJ da empresa no arquivo SPED (registro 0000).",
+                    None,
                 )
 
             with get_db() as session:
                 try:
-                    # Contagem inicial
-                    docs_antes = session.query(
-                        func.count(DocumentoFiscalSped.id)
-                    ).scalar()
-                    produtos_antes = session.query(
-                        func.count(ProdutoSped.codigo_item)
-                    ).scalar()
-                    vendas_antes = session.query(func.count(VendaSped.id)).scalar()
+                    # Verificar/Criar empresa
+                    empresa, is_new_empresa = get_or_create_empresa(
+                        session,
+                        cnpj=empresa_sped["cnpj"],
+                        razao_social=empresa_sped["razao_social"],
+                        inscricao_estadual=empresa_sped.get("inscricao_estadual"),
+                        uf=empresa_sped.get("uf"),
+                    )
 
-                    # Processar em lotes para evitar o erro "too many SQL variables"
-                    chunk_size = 500  # SQLite tem um limite de 999 variáveis por padrão
+                    empresa_id = empresa.id
+                    empresa_msg = ""
 
-                    # 1. Inserção de produtos com ON CONFLICT
+                    if is_new_empresa:
+                        empresa_msg = (
+                            f"Nova empresa cadastrada: {empresa.razao_social}. "
+                        )
+                        logger.info(
+                            f"AUDIT: Nova empresa cadastrada automaticamente: {empresa.razao_social} (CNPJ: {empresa.cnpj})"
+                        )
+                    else:
+                        # Validar se a empresa do arquivo corresponde à selecionada
+                        if (
+                            empresa_selecionada_id
+                            and empresa_id != empresa_selecionada_id
+                        ):
+                            empresa_selecionada = session.get(
+                                Empresa, empresa_selecionada_id
+                            )
+                            return (
+                                False,
+                                f"O arquivo SPED pertence à empresa '{empresa.razao_social}' (CNPJ: {empresa.cnpj}), "
+                                f"mas a empresa selecionada é '{empresa_selecionada.razao_social}' (CNPJ: {empresa_selecionada.cnpj}). "
+                                f"Selecione a empresa correta ou nenhuma empresa para importar automaticamente.",
+                                None,
+                            )
+
+                    # Contagem inicial para esta empresa
+                    docs_antes = (
+                        session.query(func.count(DocumentoFiscalSped.id))
+                        .filter(DocumentoFiscalSped.empresa_id == empresa_id)
+                        .scalar()
+                    )
+                    produtos_antes = (
+                        session.query(func.count(ProdutoSped.id))
+                        .filter(ProdutoSped.empresa_id == empresa_id)
+                        .scalar()
+                    )
+                    vendas_antes = (
+                        session.query(func.count(VendaSped.id))
+                        .join(DocumentoFiscalSped)
+                        .filter(DocumentoFiscalSped.empresa_id == empresa_id)
+                        .scalar()
+                    )
+
+                    chunk_size = 500
+
+                    # 1. Inserção de produtos com empresa_id
                     if produtos:
-                        # O número de variáveis por produto é o número de chaves em um dicionário de produto
-                        produto_vars = len(produtos[0]) if produtos else 1
-                        produto_chunk_size = chunk_size // produto_vars
+                        for produto in produtos:
+                            produto["empresa_id"] = empresa_id
+
+                        produto_chunk_size = 50
                         for i in range(0, len(produtos), produto_chunk_size):
                             chunk = produtos[i : i + produto_chunk_size]
                             stmt_produtos = (
                                 insert(ProdutoSped)
                                 .values(chunk)
-                                .on_conflict_do_nothing(index_elements=["codigo_item"])
+                                .on_conflict_do_nothing(
+                                    index_elements=["empresa_id", "codigo_item"]
+                                )
                             )
                             session.execute(stmt_produtos)
 
-                    # 2. Inserção de documentos fiscais com ON CONFLICT
+                    # 2. Inserção de documentos fiscais com empresa_id
                     if documentos:
-                        doc_vars = len(documentos[0])
-                        doc_chunk_size = chunk_size // doc_vars
+                        for doc in documentos:
+                            doc["empresa_id"] = empresa_id
+
+                        doc_chunk_size = 50
                         for i in range(0, len(documentos), doc_chunk_size):
                             chunk = documentos[i : i + doc_chunk_size]
                             stmt_docs = (
                                 insert(DocumentoFiscalSped)
                                 .values(chunk)
                                 .on_conflict_do_nothing(
-                                    index_elements=["num_documento", "serie"]
+                                    index_elements=[
+                                        "empresa_id",
+                                        "num_documento",
+                                        "serie",
+                                    ]
                                 )
                             )
                             session.execute(stmt_docs)
 
-                    session.flush()  # Garante que os IDs dos documentos sejam gerados
+                    session.flush()
 
-                    # 3. Mapear documentos para seus IDs para a inserção de vendas
+                    # 3. Mapear documentos e produtos para seus IDs
                     doc_map = {
                         (doc.num_documento, doc.serie): doc.id
                         for doc in session.query(
                             DocumentoFiscalSped.id,
                             DocumentoFiscalSped.num_documento,
                             DocumentoFiscalSped.serie,
-                        ).all()
+                        )
+                        .filter(DocumentoFiscalSped.empresa_id == empresa_id)
+                        .all()
                     }
 
-                    # 4. Inserção de vendas com ON CONFLICT, agora com documento_id
+                    produto_map = {
+                        prod.codigo_item: prod.id
+                        for prod in session.query(
+                            ProdutoSped.id,
+                            ProdutoSped.codigo_item,
+                        )
+                        .filter(ProdutoSped.empresa_id == empresa_id)
+                        .all()
+                    }
+
+                    # 4. Inserção de vendas com documento_id e produto_id
                     if vendas:
-                        # Atualiza cada venda com o documento_id correspondente
                         vendas_com_fk = []
                         for venda in vendas:
                             doc_id = doc_map.get(
                                 (venda["num_documento"], venda["serie"])
                             )
-                            if doc_id:
+                            produto_id = produto_map.get(venda["codigo_item"])
+
+                            if doc_id and produto_id:
                                 venda_corrigida = {
                                     "documento_id": doc_id,
+                                    "produto_id": produto_id,
                                     "data": venda["data"],
-                                    "codigo_item": venda["codigo_item"],
                                     "quantidade": venda["quantidade"],
                                     "valor_unitario": venda["valor_unitario"],
                                     "valor_total": venda["valor_total"],
@@ -255,15 +389,14 @@ class SpedService:
                                 }
                                 vendas_com_fk.append(venda_corrigida)
 
-                        # Reduz ainda mais o chunk_size para evitar o erro de muitas variáveis SQL
-                        venda_chunk_size = 100  # Valor mais conservador
+                        venda_chunk_size = 50
                         for i in range(0, len(vendas_com_fk), venda_chunk_size):
                             chunk = vendas_com_fk[i : i + venda_chunk_size]
                             stmt_vendas = (
                                 insert(VendaSped)
                                 .values(chunk)
                                 .on_conflict_do_nothing(
-                                    index_elements=["documento_id", "codigo_item"]
+                                    index_elements=["documento_id", "produto_id"]
                                 )
                             )
                             session.execute(stmt_vendas)
@@ -271,46 +404,64 @@ class SpedService:
                     session.commit()
 
                     # Contagem final
-                    docs_depois = session.query(
-                        func.count(DocumentoFiscalSped.id)
-                    ).scalar()
-                    produtos_depois = session.query(
-                        func.count(ProdutoSped.codigo_item)
-                    ).scalar()
-                    vendas_depois = session.query(func.count(VendaSped.id)).scalar()
+                    docs_depois = (
+                        session.query(func.count(DocumentoFiscalSped.id))
+                        .filter(DocumentoFiscalSped.empresa_id == empresa_id)
+                        .scalar()
+                    )
+                    produtos_depois = (
+                        session.query(func.count(ProdutoSped.id))
+                        .filter(ProdutoSped.empresa_id == empresa_id)
+                        .scalar()
+                    )
+                    vendas_depois = (
+                        session.query(func.count(VendaSped.id))
+                        .join(DocumentoFiscalSped)
+                        .filter(DocumentoFiscalSped.empresa_id == empresa_id)
+                        .scalar()
+                    )
 
                     novos_docs = docs_depois - docs_antes
                     novos_produtos = produtos_depois - produtos_antes
                     novas_vendas = vendas_depois - vendas_antes
 
-                    msg = f"{novos_docs} novos documentos, {novos_produtos} produtos e {novas_vendas} itens de venda importados."
+                    msg = f"{empresa_msg}{novos_docs} novos documentos, {novos_produtos} produtos e {novas_vendas} itens de venda importados para '{empresa.razao_social}'."
                     if erros:
                         msg += f" \nOcorreram {len(erros)} avisos/erros durante a importação (verifique os logs)."
                         logger.warning(f"Erros de importação: {erros}")
-                    return True, msg
+                    return True, msg, empresa_id
 
                 except Exception as e:
                     session.rollback()
                     logger.error(
                         f"Erro ao salvar no banco de dados: {e}", exc_info=True
                     )
-                    return False, f"Erro ao salvar no banco de dados: {e}"
+                    return False, f"Erro ao salvar no banco de dados: {e}", None
 
         except Exception as e:
             logger.exception("Erro fatal durante a importação")
-            return False, f"Erro inesperado durante a importação: {e}"
+            return False, f"Erro inesperado durante a importação: {e}", None
 
     @staticmethod
-    def get_cfops(search_term: Optional[str] = None) -> List[Dict]:
-        """Retorna a lista de CFOPs cadastrados."""
+    def get_cfops(
+        search_term: Optional[str] = None, empresa_id: Optional[int] = None
+    ) -> List[Dict]:
+        """Retorna a lista de CFOPs cadastrados para uma empresa."""
         try:
             with get_db() as session:
                 query = session.query(Cfop)
+                if empresa_id:
+                    query = query.filter(Cfop.empresa_id == empresa_id)
                 if search_term:
                     search = f"%{search_term}%"
-                    query = query.filter(or_(Cfop.cfop.ilike(search)))
+                    query = query.filter(
+                        or_(Cfop.cfop.ilike(search), Cfop.descricao.ilike(search))
+                    )
                 cfops = query.order_by(Cfop.cfop).all()
-                result = [{"cfop": str(c.cfop)} for c in cfops]
+                result = [
+                    {"id": c.id, "cfop": str(c.cfop), "descricao": c.descricao or ""}
+                    for c in cfops
+                ]
                 return result
         except Exception as e:
             logger.error(f"Erro ao buscar CFOPs: {e}")
@@ -330,19 +481,24 @@ class SpedService:
             raise
 
     @staticmethod
-    def add_cfop(cfop: str) -> Tuple[bool, str]:
+    def add_cfop(cfop: str, empresa_id: Optional[int] = None) -> Tuple[bool, str]:
         """Adiciona um novo CFOP com validações de segurança."""
         try:
             # Validação de entrada
             cfop = validate_cfop(cfop)
 
+            if not empresa_id:
+                return False, "Empresa não selecionada."
+
             with get_db() as session:
-                novo_cfop = Cfop(cfop=cfop)
+                novo_cfop = Cfop(cfop=cfop, empresa_id=empresa_id)
                 session.add(novo_cfop)
                 session.commit()
 
                 # Log de auditoria
-                logger.info(f"AUDIT: CFOP {cfop} adicionado com sucesso")
+                logger.info(
+                    f"AUDIT: CFOP {cfop} adicionado com sucesso para empresa {empresa_id}"
+                )
                 return True, "CFOP adicionado com sucesso!"
 
         except ValidationError as e:
@@ -380,8 +536,8 @@ class SpedService:
                 # Verifica se há produtos associados através de acumuladores (verificação adicional de segurança)
                 produtos_associados = (
                     session.query(ProdutoSped)
-                    .join(Acumulador, ProdutoSped.acumulador == Acumulador.codigo)
-                    .filter(Acumulador.cfop == cfop_codigo)
+                    .join(Acumulador, ProdutoSped.acumulador_id == Acumulador.id)
+                    .filter(Acumulador.cfop_id == cfop_obj.id)
                     .count()
                 )
 
@@ -422,7 +578,7 @@ class SpedService:
 
                 # Verifica se há acumuladores associados ao CFOP
                 acumuladores_associados = (
-                    session.query(Acumulador).filter_by(cfop=cfop).count()
+                    session.query(Acumulador).filter_by(cfop_id=cfop_obj.id).count()
                 )
 
                 if acumuladores_associados > 0:
@@ -434,8 +590,8 @@ class SpedService:
                 # Verifica se há produtos associados através de acumuladores (verificação adicional de segurança)
                 produtos_associados = (
                     session.query(ProdutoSped)
-                    .join(Acumulador, ProdutoSped.acumulador == Acumulador.codigo)
-                    .filter(Acumulador.cfop == cfop)
+                    .join(Acumulador, ProdutoSped.acumulador_id == Acumulador.id)
+                    .filter(Acumulador.cfop_id == cfop_obj.id)
                     .count()
                 )
 
@@ -456,14 +612,20 @@ class SpedService:
             return False, "Erro interno ao deletar CFOP."
 
     @staticmethod
-    def get_acumuladores(search_term: Optional[str] = None) -> List[Dict]:
-        """Retorna a lista de Acumuladores cadastrados com busca sanitizada."""
+    def get_acumuladores(
+        search_term: Optional[str] = None, empresa_id: Optional[int] = None
+    ) -> List[Dict]:
+        """Retorna a lista de Acumuladores cadastrados para uma empresa."""
         try:
             # Sanitiza termo de busca
             search_term = sanitize_search_term(search_term)
 
             with get_db() as session:
-                query = session.query(Acumulador)
+                query = session.query(Acumulador).options(
+                    joinedload(Acumulador.cfop_rel)
+                )
+                if empresa_id:
+                    query = query.filter(Acumulador.empresa_id == empresa_id)
                 if search_term:
                     search = f"%{search_term}%"
                     query = query.filter(
@@ -474,7 +636,13 @@ class SpedService:
                     )
                 acumuladores = query.order_by(Acumulador.codigo).all()
                 return [
-                    {"codigo": a.codigo, "descricao": a.descricao, "cfop": a.cfop}
+                    {
+                        "id": a.id,
+                        "codigo": a.codigo,
+                        "descricao": a.descricao,
+                        "cfop": a.cfop_rel.cfop if a.cfop_rel else None,
+                        "cfop_id": a.cfop_id,
+                    }
                     for a in acumuladores
                 ]
         except Exception as e:
@@ -499,7 +667,9 @@ class SpedService:
             raise
 
     @staticmethod
-    def add_acumulador(codigo: str, descricao: str, cfop: str) -> Tuple[bool, str]:
+    def add_acumulador(
+        codigo: str, descricao: str, cfop: str, empresa_id: Optional[int] = None
+    ) -> Tuple[bool, str]:
         """Adiciona um novo Acumulador com validações de segurança."""
         try:
             # Validações de entrada
@@ -507,19 +677,32 @@ class SpedService:
             descricao = validate_descricao(descricao, "Descrição do acumulador")
             cfop = validate_cfop(cfop)
 
+            if not empresa_id:
+                return False, "Empresa não selecionada."
+
             with get_db() as session:
-                # Verifica se o CFOP existe
-                if not session.query(Cfop).filter_by(cfop=cfop).first():
-                    return False, "CFOP informado não existe."
+                # Verifica se o CFOP existe para a mesma empresa
+                cfop_obj = (
+                    session.query(Cfop)
+                    .filter_by(cfop=cfop, empresa_id=empresa_id)
+                    .first()
+                )
+                if not cfop_obj:
+                    return False, "CFOP informado não existe para esta empresa."
 
                 novo_acumulador = Acumulador(
-                    codigo=codigo, descricao=descricao, cfop=cfop
+                    codigo=codigo,
+                    descricao=descricao,
+                    cfop_id=cfop_obj.id,
+                    empresa_id=empresa_id,
                 )
                 session.add(novo_acumulador)
                 session.commit()
 
                 # Log de auditoria
-                logger.info(f"AUDIT: Acumulador {codigo} adicionado com sucesso")
+                logger.info(
+                    f"AUDIT: Acumulador {codigo} adicionado com sucesso para empresa {empresa_id}"
+                )
                 return True, "Acumulador adicionado com sucesso!"
 
         except ValidationError as e:
@@ -579,7 +762,9 @@ class SpedService:
 
                 # Verifica se o Acumulador está em uso por algum produto
                 produtos_count = (
-                    session.query(ProdutoSped).filter_by(acumulador=codigo).count()
+                    session.query(ProdutoSped)
+                    .filter_by(acumulador_id=acumulador.id)
+                    .count()
                 )
                 if produtos_count > 0:
                     return (
@@ -621,7 +806,7 @@ class SpedService:
                     if not acumulador:
                         return False, "Acumulador não encontrado."
 
-                produto.acumulador = codigo_acumulador
+                produto.acumulador_id = acumulador.id if acumulador else None
                 produto.data_alteracao = datetime.now().date()
                 session.commit()
                 logger.info(
@@ -646,12 +831,11 @@ class SpedService:
 
         try:
             with get_db() as session:
-                # Verifica se o acumulador existe
-                if (
-                    not session.query(Acumulador)
-                    .filter_by(codigo=acumulador_code)
-                    .first()
-                ):
+                # Verifica se o acumulador existe e pega o ID
+                acumulador = (
+                    session.query(Acumulador).filter_by(codigo=acumulador_code).first()
+                )
+                if not acumulador:
                     return False, "Acumulador inválido."
 
                 # Atualiza os produtos
@@ -660,7 +844,7 @@ class SpedService:
                     .filter(ProdutoSped.codigo_item.in_(product_codes))
                     .update(
                         {
-                            "acumulador": acumulador_code,
+                            "acumulador_id": acumulador.id,
                             "data_alteracao": datetime.now().date(),
                         },
                         synchronize_session=False,
@@ -704,14 +888,21 @@ class SpedService:
             return [], 0
 
     @staticmethod
-    def get_competencias() -> List[str]:
+    def get_competencias(empresa_id: Optional[int] = None) -> List[str]:
         """Retorna a lista de competências (meses/anos) disponíveis."""
         try:
             with get_db() as session:
+                query = session.query(func.strftime("%Y-%m", VendaSped.data))
+
+                if empresa_id:
+                    query = query.join(
+                        DocumentoFiscalSped,
+                        VendaSped.documento_id == DocumentoFiscalSped.id,
+                    ).filter(DocumentoFiscalSped.empresa_id == empresa_id)
+
                 # Busca as competências distintas na tabela de vendas
                 competencias = (
-                    session.query(func.strftime("%Y-%m", VendaSped.data))
-                    .distinct()
+                    query.distinct()
                     .order_by(func.strftime("%Y-%m", VendaSped.data).desc())
                     .all()
                 )
@@ -727,6 +918,7 @@ class SpedService:
         search_term: Optional[str] = None,
         page: int = 1,
         per_page: int = 50,
+        empresa_id: Optional[int] = None,
     ) -> Tuple[List[Dict], int]:
         """
         Retorna produtos paginados com filtros opcionais e validações de segurança.
@@ -736,6 +928,7 @@ class SpedService:
             search_term: Buscar por código, descrição ou NCM
             page: Número da página
             per_page: Itens por página
+            empresa_id: ID da empresa para filtrar produtos
         """
         try:
             # Validações de entrada
@@ -745,16 +938,14 @@ class SpedService:
             with get_db() as session:
                 query = session.query(ProdutoSped)
 
+                # Filtrar por empresa (obrigatório se fornecido)
+                if empresa_id:
+                    query = query.filter(ProdutoSped.empresa_id == empresa_id)
+
                 if filter_opt == "cadastrados":
-                    query = query.filter(
-                        ProdutoSped.acumulador != None, ProdutoSped.acumulador != ""
-                    )
+                    query = query.filter(ProdutoSped.acumulador_id.isnot(None))
                 elif filter_opt == "naoCadastrados":
-                    query = query.filter(
-                        or_(
-                            ProdutoSped.acumulador == None, ProdutoSped.acumulador == ""
-                        )
-                    )
+                    query = query.filter(ProdutoSped.acumulador_id.is_(None))
 
                 if search_term:
                     search = f"%{search_term}%"
@@ -777,7 +968,9 @@ class SpedService:
                         "descricao_item": p.descricao_item,
                         "unidade": p.unidade,
                         "ncm": p.ncm,
-                        "acumulador": p.acumulador,
+                        "acumulador": p.acumulador_rel.codigo
+                        if p.acumulador_rel
+                        else None,
                         "aliquota_icms": p.aliquota_icms,
                         "data_cadastro": p.data_cadastro.isoformat()
                         if p.data_cadastro
@@ -851,7 +1044,9 @@ class SpedService:
         return vendas_com_rateio
 
     @staticmethod
-    def get_relatorio_vendas(competencia: Optional[str] = None) -> Dict:
+    def get_relatorio_vendas(
+        competencia: Optional[str] = None, empresa_id: Optional[int] = None
+    ) -> Dict:
         """Retorna o relatório de vendas agrupado por acumulador com detalhes por data."""
         try:
             # Valida competência
@@ -859,15 +1054,14 @@ class SpedService:
 
             # Verifica se há produtos sem acumulador
             with get_db() as session:
-                produtos_sem_acumulador = (
-                    session.query(ProdutoSped)
-                    .filter(
-                        or_(
-                            ProdutoSped.acumulador == None, ProdutoSped.acumulador == ""
-                        )
-                    )
-                    .count()
+                query_prod = session.query(ProdutoSped).filter(
+                    ProdutoSped.acumulador_id.is_(None)
                 )
+                if empresa_id:
+                    query_prod = query_prod.filter(ProdutoSped.empresa_id == empresa_id)
+
+                produtos_sem_acumulador = query_prod.count()
+
                 if produtos_sem_acumulador > 0:
                     raise ValueError(
                         f"Existem {produtos_sem_acumulador} produto(s) sem acumulador. Por favor, associe os acumuladores na aba 'Produtos' antes de gerar relatórios."
@@ -883,13 +1077,16 @@ class SpedService:
                         ),
                         joinedload(VendaSped.documento_rel),
                     )
-                    .join(ProdutoSped, VendaSped.codigo_item == ProdutoSped.codigo_item)
-                    .join(Acumulador, ProdutoSped.acumulador == Acumulador.codigo)
+                    .join(ProdutoSped, VendaSped.produto_id == ProdutoSped.id)
+                    .join(Acumulador, ProdutoSped.acumulador_id == Acumulador.id)
                     .join(
                         DocumentoFiscalSped,
                         VendaSped.documento_id == DocumentoFiscalSped.id,
                     )
                 )
+
+                if empresa_id:
+                    query = query.filter(DocumentoFiscalSped.empresa_id == empresa_id)
 
                 if competencia:
                     query = query.filter(
@@ -978,7 +1175,9 @@ class SpedService:
             raise
 
     @staticmethod
-    def get_relatorio_cfop(competencia: Optional[str] = None) -> List[Dict]:
+    def get_relatorio_cfop(
+        competencia: Optional[str] = None, empresa_id: Optional[int] = None
+    ) -> List[Dict]:
         """Retorna o relatório de vendas por CFOP com rateio de despesas."""
         try:
             # Valida competência
@@ -987,15 +1186,13 @@ class SpedService:
 
             # Verifica se há produtos sem acumulador (mesma lógica da aba acumuladores)
             with get_db() as session:
-                produtos_sem_acumulador = (
-                    session.query(ProdutoSped)
-                    .filter(
-                        or_(
-                            ProdutoSped.acumulador == None, ProdutoSped.acumulador == ""
-                        )
-                    )
-                    .count()
+                query_prod = session.query(ProdutoSped).filter(
+                    ProdutoSped.acumulador_id.is_(None)
                 )
+                if empresa_id:
+                    query_prod = query_prod.filter(ProdutoSped.empresa_id == empresa_id)
+
+                produtos_sem_acumulador = query_prod.count()
                 logger.info(
                     f"Total de produtos sem acumulador: {produtos_sem_acumulador}"
                 )
@@ -1012,14 +1209,17 @@ class SpedService:
                         VendaSped, ProdutoSped, Acumulador, Cfop, DocumentoFiscalSped
                     )
                     .select_from(VendaSped)
-                    .join(ProdutoSped, VendaSped.codigo_item == ProdutoSped.codigo_item)
-                    .join(Acumulador, ProdutoSped.acumulador == Acumulador.codigo)
-                    .join(Cfop, Acumulador.cfop == Cfop.cfop)
+                    .join(ProdutoSped, VendaSped.produto_id == ProdutoSped.id)
+                    .join(Acumulador, ProdutoSped.acumulador_id == Acumulador.id)
+                    .join(Cfop, Acumulador.cfop_id == Cfop.id)
                     .join(
                         DocumentoFiscalSped,
                         VendaSped.documento_id == DocumentoFiscalSped.id,
                     )
                 )
+
+                if empresa_id:
+                    query = query.filter(DocumentoFiscalSped.empresa_id == empresa_id)
 
                 if competencia:
                     query = query.filter(
@@ -1027,7 +1227,7 @@ class SpedService:
                     )
 
                 logger.info(
-                    f"Executando query para buscar vendas com relacionamentos..."
+                    "Executando query para buscar vendas com relacionamentos..."
                 )
                 resultados = query.all()
                 logger.info(
@@ -1071,7 +1271,7 @@ class SpedService:
                     # Busca o CFOP através do acumulador de forma mais robusta
                     try:
                         produto = venda.produto_rel
-                        if not produto or not produto.acumulador:
+                        if not produto or not produto.acumulador_id:
                             continue  # Pula produtos sem acumulador
 
                         acumulador = produto.acumulador_rel
@@ -1115,12 +1315,15 @@ class SpedService:
             raise
 
     @staticmethod
-    def get_vendas(competencia: Optional[str] = None) -> Dict:
+    def get_vendas(
+        competencia: Optional[str] = None, empresa_id: Optional[int] = None
+    ) -> Dict:
         """
         Retorna um relatório de resumo de vendas (total, a vista, a prazo).
 
         Args:
             competencia: O mês/ano para filtrar o relatório.
+            empresa_id: Filtra por empresa
         """
         try:
             # Valida competência
@@ -1131,6 +1334,9 @@ class SpedService:
                 query = session.query(DocumentoFiscalSped).filter(
                     DocumentoFiscalSped.ind_oper == "1"
                 )
+
+                if empresa_id:
+                    query = query.filter(DocumentoFiscalSped.empresa_id == empresa_id)
 
                 if competencia:
                     query = query.filter(

@@ -54,9 +54,7 @@ def _cleanup_old_entries():
 
         _last_cleanup = now
         if keys_to_delete:
-            logger.debug(
-                f"Rate limit cleanup: {len(keys_to_delete)} entradas removidas"
-            )
+            logger.debug(f"Rate limit cleanup: {len(keys_to_delete)} entradas removidas")
 
 
 def rate_limit(max_requests: int = 60, window_minutes: int = 1):
@@ -85,12 +83,15 @@ def rate_limit(max_requests: int = 60, window_minutes: int = 1):
             # Verifica limite
             if len(client_requests) >= max_requests:
                 logger.warning(f"Rate limit exceeded for {client_id}")
-                return jsonify(
-                    {
-                        "success": False,
-                        "error": "Muitas requisições. Tente novamente em alguns minutos.",
-                    }
-                ), 429
+                return (
+                    jsonify(
+                        {
+                            "success": False,
+                            "error": "Muitas requisições. Tente novamente em alguns minutos.",
+                        }
+                    ),
+                    429,
+                )
 
             client_requests.append(now)
             return f(*args, **kwargs)
@@ -133,9 +134,7 @@ def apply_security_headers(response):
             "base-uri 'self';"
         )
         # HSTS apenas em produção
-        response.headers["Strict-Transport-Security"] = (
-            "max-age=31536000; includeSubDomains"
-        )
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
 
     # Remove header do servidor
     response.headers.pop("Server", None)

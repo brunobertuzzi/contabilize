@@ -1,47 +1,53 @@
-<!-- Sidebar -->
-<div class="sidebar collapsed" id="sidebar">
-    <div class="d-flex flex-column h-100">
-        <a class="navbar-brand" href="/">
-            <i class="bi bi-calculator brand-icon" aria-hidden="true"></i>
-            <span class="brand-text">Contabilize</span>
-        </a>
-        <nav class="flex-grow-1">
-            <ul class="nav flex-column">
-                <li class="nav-item">
-                    <a class="nav-link {{ 'active' if active_page == 'index' else '' }}" href="/">
-                        <i class="bi bi-house" aria-hidden="true"></i>
-                        <span class="nav-link-text">Início</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link {{ 'active' if active_page == 'sped' else '' }}" href="/sped/">
-                        <i class="bi bi-file-earmark-zip" aria-hidden="true"></i>
-                        <span class="nav-link-text">SPED Fiscal</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link {{ 'active' if active_page == 'settings' else '' }}" href="/settings">
-                        <i class="bi bi-gear" aria-hidden="true"></i>
-                        <span class="nav-link-text">Configurações</span>
-                    </a>
-                </li>
-            </ul>
-        </nav>
-        <div class="mt-auto">
-            <ul class="nav flex-column">
-                <li class="nav-item">
-                    <a class="nav-link {{ 'active' if active_page == 'about' else '' }}" href="/about">
-                        <i class="bi bi-info-circle" aria-hidden="true"></i>
-                        <span class="nav-link-text">Sobre</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/logout">
-                        <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
-                        <span class="nav-link-text">Sair</span>
-                    </a>
-                </li>
-            </ul>
-        </div>
+<!-- Sidebar Redesenhada -->
+<aside class="sidebar collapsed" id="sidebar">
+    <!-- Brand/Logo -->
+    <a class="sidebar-brand" href="/">
+        <span class="brand-icon">
+            <i class="bi bi-calculator" aria-hidden="true"></i>
+        </span>
+        <span class="brand-text">Contabilize</span>
+    </a>
+
+    <!-- Main Navigation -->
+    <nav class="sidebar-nav">
+        <div class="nav-section-title">Menu Principal</div>
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link {{ 'active' if active_page == 'index' else '' }}" href="/" data-title="Início">
+                    <span class="nav-icon"><i class="bi bi-house" aria-hidden="true"></i></span>
+                    <span class="nav-text">Início</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ 'active' if active_page == 'sped' else '' }}" href="/sped/" data-title="SPED Fiscal">
+                    <span class="nav-icon"><i class="bi bi-file-earmark-zip" aria-hidden="true"></i></span>
+                    <span class="nav-text">SPED Fiscal</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ 'active' if active_page == 'settings' else '' }}" href="/settings" data-title="Configurações">
+                    <span class="nav-icon"><i class="bi bi-gear" aria-hidden="true"></i></span>
+                    <span class="nav-text">Configurações</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Footer Navigation -->
+    <div class="sidebar-footer">
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link {{ 'active' if active_page == 'about' else '' }}" href="/about" data-title="Sobre">
+                    <span class="nav-icon"><i class="bi bi-info-circle" aria-hidden="true"></i></span>
+                    <span class="nav-text">Sobre</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link logout-link" href="/logout" data-title="Sair">
+                    <span class="nav-icon"><i class="bi bi-box-arrow-right" aria-hidden="true"></i></span>
+                    <span class="nav-text">Sair</span>
+                </a>
+            </li>
+        </ul>
     </div>
-</div>
+</aside>
