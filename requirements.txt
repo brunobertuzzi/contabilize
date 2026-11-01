@@ -1,0 +1,12 @@
+# Framework Web
+Flask==3.1.1
+Flask-Login==0.6.3
+Werkzeug>=3.0.0
+gunicorn>=23.0.0
+
+# Banco de Dados & ORM
+SQLAlchemy==2.0.41
+psycopg2-binary>=2.9.9
+
+# Configuração & Ambiente
+python-dotenv==1.1.1

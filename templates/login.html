@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acessar o Sistema - Contabilize Fiscal</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <!-- Dealt Fonts: IBM Plex Sans & IBM Plex Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Custom CSS Framed Sheet -->
+    <link rel="stylesheet" href="/static/css/main.css">
+    <style>
+        body {
+            background-color: var(--ground);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px 16px;
+        }
+        .login-sheet {
+            width: 100%;
+            max-width: 400px;
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sheet);
+            padding: 32px 28px;
+        }
+        .login-brand-mark {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            background: var(--text);
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-family: var(--font-mono);
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="login-sheet">
+        <div class="d-flex align-items-center gap-2 mb-3">
+            <div class="login-brand-mark">C</div>
+            <div>
+                <div class="fw-semibold text-dark" style="font-size: 16px; letter-spacing: -0.01em;">Contabilize</div>
+                <div class="text-muted" style="font-size: 11px; font-family: var(--font-mono);">FISCAL WORKBENCH</div>
+            </div>
+        </div>
+
+        <h1 class="view-header-title mb-1" style="font-size: 19px;">Acessar Workspace</h1>
+        <p class="text-muted mb-4" style="font-size: 13px;">Informe suas credenciais para entrar no sistema de auditoria fiscal.</p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="p-3 mb-3 rounded-2 {% if category in ['danger', 'error'] %}bg-danger-subtle text-danger border border-danger-subtle{% elif category == 'warning' %}bg-warning-subtle text-warning-emphasis border border-warning-subtle{% else %}bg-success-subtle text-success border border-success-subtle{% endif %}" style="font-size: 13px;">
+            {{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <form action="/login" method="post" novalidate id="loginForm">
+            <div class="mb-3">
+                <label for="username" class="form-label text-muted fw-medium" style="font-size: 12px;">Usuário</label>
+                <input type="text" class="app-input w-100" id="username" name="username" value="{{ last_username or '' }}" required autofocus autocomplete="username" style="height: 38px;">
+            </div>
+
+            <div class="mb-3 position-relative">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <label for="password" class="form-label text-muted fw-medium mb-0" style="font-size: 12px;">Senha</label>
+                </div>
+                <div class="position-relative">
+                    <input type="password" class="app-input w-100 pe-5" id="password" name="password" required autocomplete="current-password" style="height: 38px;">
+                    <button type="button" class="btn btn-link password-toggle-btn position-absolute top-50 end-0 translate-middle-y me-2 text-muted p-0" data-target="password" title="Mostrar/ocultar senha" tabindex="-1">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="remember_me" name="remember_me" checked>
+                    <label class="form-check-label text-muted user-select-none" for="remember_me" style="font-size: 13px;">
+                        Lembrar neste navegador
+                    </label>
+                </div>
+            </div>
+
+            <div class="d-grid mb-3">
+                <button type="submit" class="btn-app btn-app-primary w-100 justify-content-center" style="height: 38px; font-size: 13px;">
+                    Entrar no Sistema
+                </button>
+            </div>
+        </form>
+
+        <div class="pt-3 border-top text-center">
+            <span class="text-muted" style="font-size: 12px;">
+                <i class="bi bi-shield-check me-1 text-success"></i>Ambiente Seguro e Autenticado
+            </span>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/main.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,85 @@
+<!-- Sidebar Framed Sheet Contabilize v3.0 -->
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+<aside class="sidebar" id="sidebar">
+    <script>
+        if (localStorage.getItem('sidebar_collapsed') === 'true' && window.innerWidth > 768) {
+            document.getElementById('sidebar').classList.add('collapsed');
+        }
+    </script>
+    <!-- Brand & Workspace Scope -->
+    <div>
+        <div class="sidebar-header">
+            <a class="sidebar-brand" href="/" title="Contabilize Fiscal">
+                <span class="sidebar-brand-mark">C</span>
+                <span class="sidebar-brand-name">Contabilize</span>
+                <span class="sidebar-brand-scope">FISCAL</span>
+            </a>
+            <button class="sidebar-toggle-btn d-none d-md-inline-flex" id="sidebarPinBtn" title="Recolher / Expandir Menu" aria-label="Recolher menu lateral">
+                <i class="bi bi-layout-sidebar-inset" id="sidebarPinIcon"></i>
+            </button>
+            <button class="btn btn-sm d-md-none p-0 text-muted" id="closeSidebarBtn" title="Fechar Menu" aria-label="Fechar menu">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="sidebar-nav">
+            <div class="sidebar-nav-group">Escrituração</div>
+            <ul class="nav flex-column mb-3">
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if active_page == 'index' else '' }}" href="/" title="Visão Geral" data-title="Visão Geral">
+                        <i class="bi bi-grid-1x2" aria-hidden="true"></i>
+                        <span>Visão Geral</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if active_page == 'sped' else '' }}" href="/sped/" title="SPED Workbench" data-title="SPED Workbench">
+                        <i class="bi bi-terminal" aria-hidden="true"></i>
+                        <span>SPED Workbench</span>
+                    </a>
+                </li>
+            </ul>
+
+            <div class="sidebar-nav-group">Administração</div>
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if active_page == 'settings' else '' }}" href="/settings" title="Configurações" data-title="Configurações">
+                        <i class="bi bi-sliders" aria-hidden="true"></i>
+                        <span>Configurações</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if active_page == 'about' else '' }}" href="/about" title="Sobre o Sistema" data-title="Sobre o Sistema">
+                        <i class="bi bi-info-circle" aria-hidden="true"></i>
+                        <span>Sobre o Sistema</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+
+    <!-- User / Profile Footer -->
+    <div class="sidebar-footer">
+        {% if current_user.is_authenticated %}
+        <div class="sidebar-user-row">
+            <div class="sidebar-avatar" title="Usuário: {{ current_user.username }}">
+                {{ current_user.username[0]|upper }}
+            </div>
+            <div class="flex-grow-1 overflow-hidden">
+                <div class="sidebar-user-name text-truncate" style="font-size: 13px !important;">{{ current_user.username }}</div>
+                <div class="sidebar-user-role" style="font-size: 12px !important;">
+                    {% if current_user.is_admin %}Administrador{% else %}Operador{% endif %}
+                </div>
+            </div>
+            <a href="/logout" class="text-muted p-1" title="Sair da Conta">
+                <i class="bi bi-box-arrow-right"></i>
+            </a>
+        </div>
+        {% else %}
+        <a class="nav-link" href="/login" title="Entrar">
+            <i class="bi bi-box-arrow-in-right"></i>
+            <span>Entrar</span>
+        </a>
+        {% endif %}
+    </div>
+</aside>

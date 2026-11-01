@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SPED Fiscal Workbench - Contabilize</title>
+    <!-- Bootstrap CSS for grid & modal utilities -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <!-- Dealt Fonts: IBM Plex Sans & IBM Plex Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Custom CSS Framed Sheet -->
+    <link rel="stylesheet" href="/static/css/main.css">
+</head>
+
+<body data-empresa-selecionada="{{ 'true' if empresa_selecionada else 'false' }}">
+    <!-- Loading Overlay -->
+    <div id="competenciaLoadingOverlay" class="loading-overlay">
+        <div class="app-spinner mb-2"></div>
+        <div class="fw-medium text-dark" style="font-size: 14px;">Processando dados fiscais...</div>
+        <div class="text-muted" style="font-size: 12px;">Atualizando catálogo e relatórios da escrituração</div>
+    </div>
+
+    <div class="app-frame">
+        <!-- Sidebar Navigation -->
+        {% include 'sidebar.html' %}
+
+        <!-- Main Workspace Wrapper -->
+        <div class="main-wrapper">
+            <!-- Topbar Global -->
+            {% include 'topbar.html' %}
+
+            <!-- Work Sheet -->
+            <main class="main-content" id="mainContent">
+                <!-- View Header -->
+                <header class="view-header">
+                    <div>
+                        <h1 class="view-header-title">SPED Fiscal Workbench</h1>
+                        <p class="view-header-sub">Auditoria analítica de arquivos EFD ICMS/IPI, produtos e conciliação de acumuladores.</p>
+                    </div>
+                    <div class="view-header-actions">
+                        <button type="button" class="btn-app btn-app-primary" id="btnClassificarAuto">
+                            <i class="bi bi-lightning-charge me-1"></i>Classificação Automática
+                        </button>
+                        <button type="button" class="btn-app" id="btnAnalisarInconsistencias">
+                            <i class="bi bi-search me-1"></i>Inconsistências
+                        </button>
+                        <button type="button" class="btn-app" data-bs-toggle="modal" data-bs-target="#acumuladoresModal">
+                            <i class="bi bi-folder2 me-1"></i>Acumuladores
+                        </button>
+                        <button type="button" class="btn-app" data-bs-toggle="modal" data-bs-target="#cfopsModal">
+                            <i class="bi bi-tags me-1"></i>Regras CFOP
+                        </button>
+                        <button type="button" class="btn-app" id="toggleFullscreen" title="Alternar tela cheia">
+                            <i class="bi bi-arrows-fullscreen"></i>
+                        </button>
+                    </div>
+                </header>
+
+                <!-- Integrated Scope & Ingestion Deck (Continuous Header Ribbon) -->
+                <div class="panel-flush mb-4">
+                    <div class="p-3 bg-white border rounded-2 d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3">
+                        <!-- Empresa Selector -->
+                        <div class="d-flex align-items-center gap-2">
+                            <label class="fw-semibold text-muted" style="font-size: 12px;" for="empresaSelect">EMPRESA:</label>
+                            <select class="app-select" id="empresaSelect" name="empresa_id" style="min-width: 280px;">
+                                <option value="">Selecione uma empresa cadastrada...</option>
+                                {% for empresa in empresas %}
+                                <option value="{{ empresa.id }}" {% if empresa_selecionada and empresa_selecionada.id == empresa.id %}selected{% endif %}>
+                                    {{ empresa.razao_social }} ({{ empresa.cnpj }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <button type="button" class="btn-app" id="refreshEmpresas" title="Atualizar lista de empresas">
+                                <i class="bi bi-arrow-clockwise"></i>
+                            </button>
+                        </div>
+
+                        <!-- Compact Inline SPED Upload Dropper -->
+                        <form id="formSped" method="POST" enctype="multipart/form-data" class="d-flex align-items-center gap-2 flex-grow-1">
+                            <input type="file" id="arquivo_sped" name="arquivo_sped" accept=".txt,.sped,.efd" class="d-none" required>
+                            <div class="inline-dropzone flex-grow-1 py-2 px-3" id="dropzoneArea" style="cursor: pointer;">
+                                <div class="dropzone-label">
+                                    <i class="bi bi-file-earmark-arrow-up dropzone-icon" style="font-size: 16px;" aria-hidden="true"></i>
+                                    <div>
+                                        <div class="dropzone-title" style="font-size: 12px;">Carregar SPED Fiscal (.txt)</div>
+                                        <div class="dropzone-hint" style="font-size: 11px;">Clique ou arraste o arquivo</div>
+                                    </div>
+                                </div>
+                                <div id="fileSelectedInfo" class="d-none">
+                                    <span id="selectedFileName" class="fw-semibold text-dark mono-num" style="font-size: 12px;"></span>
+                                    <span id="selectedFileSize" class="text-muted ms-1 mono-num" style="font-size: 11px;"></span>
+                                </div>
+                            </div>
+                            <button type="button" id="submitSped" class="btn-app btn-app-primary">
+                                <i class="bi bi-upload me-1"></i>Processar SPED
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Segmented Workbench Navigation Tabs -->
+                <div class="segmented-nav" role="tablist">
+                    <button class="segmented-nav-btn active" id="produtos-tab" data-bs-toggle="tab" data-bs-target="#produtos" type="button" role="tab" aria-selected="true">
+                        <i class="bi bi-box-seam me-1"></i><span>Catálogo de Produtos</span>
+                    </button>
+                    <button class="segmented-nav-btn" id="vendas-tab" data-bs-toggle="tab" data-bs-target="#vendas" type="button" role="tab" aria-selected="false">
+                        <i class="bi bi-receipt me-1"></i><span>Resumo de Vendas</span>
+                    </button>
+                    <button class="segmented-nav-btn" id="relatorio-acumulador-tab" data-bs-toggle="tab" data-bs-target="#relatorio-acumulador" type="button" role="tab" aria-selected="false">
+                        <i class="bi bi-pie-chart me-1"></i><span>Apuração por Acumulador</span>
+                    </button>
+                    <button class="segmented-nav-btn" id="relatorio-cfop-tab" data-bs-toggle="tab" data-bs-target="#relatorio-cfop" type="button" role="tab" aria-selected="false">
+                        <i class="bi bi-list-check me-1"></i><span>Totais por CFOP</span>
+                    </button>
+                </div>
+
+                <!-- Workbench Tab Contents -->
+                <div class="tab-content" id="spedTabContent">
+                    <!-- Tab 1: Catálogo de Produtos -->
+                    <div class="tab-pane fade show active" id="produtos" role="tabpanel" aria-labelledby="produtos-tab">
+                        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-3">
+                            <!-- Filter pills/radios -->
+                            <div class="btn-group btn-group-sm" role="group" aria-label="Filtro de status de acumulador">
+                                <input type="radio" class="btn-check" name="acumuladorFilter" id="todos" value="todos" autocomplete="off" checked>
+                                <label class="btn btn-outline-secondary btn-sm" for="todos">Todos</label>
+
+                                <input type="radio" class="btn-check" name="acumuladorFilter" id="cadastrados" value="cadastrados" autocomplete="off">
+                                <label class="btn btn-outline-secondary btn-sm" for="cadastrados">Com Acumulador</label>
+
+                                <input type="radio" class="btn-check" name="acumuladorFilter" id="naoCadastrados" value="naoCadastrados" autocomplete="off">
+                                <label class="btn btn-outline-secondary btn-sm" for="naoCadastrados">Sem Acumulador</label>
+                            </div>
+
+                            <!-- Live Search -->
+                            <div class="flex-grow-1" style="max-width: 400px;">
+                                <input type="text" id="searchProdutos" class="app-input w-100" placeholder="Buscar por código ou descrição...">
+                            </div>
+                        </div>
+
+                        <!-- Data Grid -->
+                        <div class="table-wrap">
+                            <table class="fiscal-table" id="produtosTable">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 40px; text-align: center;">
+                                            <input type="checkbox" id="selectAllProducts" class="form-check-input mt-0" aria-label="Selecionar todos os produtos">
+                                        </th>
+                                        <th style="width: 140px;">Código</th>
+                                        <th>Descrição do Produto</th>
+                                        <th style="width: 80px;">Unidade</th>
+                                        <th style="width: 110px;">NCM</th>
+                                        <th style="width: 260px;">Acumulador Vinculado</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="produtosBody">
+                                    <!-- Rendered dynamically by sped.js -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination Dock -->
+                        <div id="produtosPagination" class="d-flex justify-content-between align-items-center mt-3">
+                            <!-- Rendered dynamically by sped.js -->
+                        </div>
+
+                        <!-- Floating Bulk Action Dock -->
+                        <div id="bulkActionContainer" class="bulk-dock d-none">
+                            <span id="selectedCount" class="mono-num fw-bold">0</span>
+                            <span style="font-size: 13px;">itens selecionados</span>
+                            <select id="bulkAcumuladorSelect" class="app-select" style="min-width: 220px; color: #131416;">
+                                <option value="">Selecione o acumulador...</option>
+                                {% for acumulador in acumuladores %}
+                                <option value="{{ acumulador.id }}">{{ acumulador.codigo }} - {{ acumulador.descricao }}</option>
+                                {% endfor %}
+                            </select>
+                            <button id="applyBulkAction" type="button" class="btn-app btn-app-primary">
+                                Aplicar em Lote
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Tab 2: Resumo de Vendas -->
+                    <div class="tab-pane fade" id="vendas" role="tabpanel" aria-labelledby="vendas-tab">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <label class="fw-medium text-muted" style="font-size: 13px;" for="competenciaVendasFilter">Competência:</label>
+                                <button type="button" class="btn btn-sm btn-ghost p-1" id="prevVendas" title="Competência Anterior"><i class="bi bi-chevron-left"></i></button>
+                                <select id="competenciaVendasFilter" class="app-select" style="min-width: 180px;">
+                                    <option value="">Todas as competências</option>
+                                </select>
+                                <button type="button" class="btn btn-sm btn-ghost p-1" id="nextVendas" title="Próxima Competência"><i class="bi bi-chevron-right"></i></button>
+                            </div>
+                        </div>
+
+                        <div id="vendasReportWarning" class="d-none p-3 mb-3 rounded-2" style="background: var(--pill-warning-bg); border: 1px solid var(--warning);">
+                            <span id="vendasReportWarningText" style="color: var(--pill-warning-ink); font-size: 13px;"></span>
+                        </div>
+
+                        <div class="table-wrap">
+                            <table class="fiscal-table" id="vendasTable">
+                                <thead>
+                                    <tr>
+                                        <th>Modalidade de Venda</th>
+                                        <th class="num" style="width: 240px;">Valor Consolidado</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="vendasBody">
+                                    <!-- Rendered dynamically by sped.js -->
+                                </tbody>
+                                <tfoot></tfoot>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Tab 3: Relatório por Acumulador -->
+                    <div class="tab-pane fade" id="relatorio-acumulador" role="tabpanel" aria-labelledby="relatorio-acumulador-tab">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <label class="fw-medium text-muted" style="font-size: 13px;" for="competenciaFilter">Competência:</label>
+                                <button type="button" class="btn btn-sm btn-ghost p-1" id="prevAcumulador" title="Competência Anterior"><i class="bi bi-chevron-left"></i></button>
+                                <select id="competenciaFilter" class="app-select" style="min-width: 180px;">
+                                    <option value="">Todas as competências</option>
+                                </select>
+                                <button type="button" class="btn btn-sm btn-ghost p-1" id="nextAcumulador" title="Próxima Competência"><i class="bi bi-chevron-right"></i></button>
+                            </div>
+                        </div>
+
+                        <div id="relatorioAcumuladorWarning" class="d-none p-3 mb-3 rounded-2" style="background: var(--pill-warning-bg); border: 1px solid var(--warning);">
+                            <span id="relatorioAcumuladorWarningText" style="color: var(--pill-warning-ink); font-size: 13px;"></span>
+                        </div>
+
+                        <div class="table-wrap">
+                            <table class="fiscal-table" id="relatorioAcumuladorTable">
+                                <thead>
+                                    <tr>
+                                        <th>Acumulador Contábil</th>
+                                        <th style="width: 140px; text-align: center;">Qtd de Datas</th>
+                                        <th class="num" style="width: 220px;">Valor Total Faturado</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="acumuladoresBody">
+                                    <!-- Rendered dynamically by sped.js -->
+                                </tbody>
+                                <tfoot></tfoot>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Tab 4: Totais por CFOP -->
+                    <div class="tab-pane fade" id="relatorio-cfop" role="tabpanel" aria-labelledby="relatorio-cfop-tab">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <label class="fw-medium text-muted" style="font-size: 13px;" for="competenciaCfopFilter">Competência:</label>
+                                <button type="button" class="btn btn-sm btn-ghost p-1" id="prevCfop" title="Competência Anterior"><i class="bi bi-chevron-left"></i></button>
+                                <select id="competenciaCfopFilter" class="app-select" style="min-width: 180px;">
+                                    <option value="">Todas as competências</option>
+                                </select>
+                                <button type="button" class="btn btn-sm btn-ghost p-1" id="nextCfop" title="Próxima Competência"><i class="bi bi-chevron-right"></i></button>
+                            </div>
+                        </div>
+
+                        <div id="cfopReportWarning" class="d-none p-3 mb-3 rounded-2" style="background: var(--pill-warning-bg); border: 1px solid var(--warning);">
+                            <span id="cfopReportWarningText" style="color: var(--pill-warning-ink); font-size: 13px;"></span>
+                        </div>
+
+                        <div class="table-wrap">
+                            <table class="fiscal-table" id="cfopTable">
+                                <thead>
+                                    <tr>
+                                        <th>CFOP</th>
+                                        <th class="num" style="width: 240px;">Valor Total Faturado</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cfopBody">
+                                    <!-- Rendered dynamically by sped.js -->
+                                </tbody>
+                                <tfoot></tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+<div class="modal fade" id="acumuladoresModal" tabindex="-1">
+
+        <div class="modal-dialog modal-lg">
+
+            <div class="modal-content">
+
+                <div class="modal-header">
+
+                    <h2 class="h5 modal-title mb-0"><i class="bi bi-gear me-2"></i>Gerenciar Acumuladores</h2>
+
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+
+                </div>
+
+                <div class="modal-body">
+
+                    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+
+                        <button type="button" class="btn btn-primary" id="btnNovoAcumulador" data-bs-toggle="modal" data-bs-target="#novoAcumuladorModal">
+
+                            <i class="bi bi-plus-lg me-2"></i>Novo Acumulador
+
+                        </button>
+
+                        <input type="text" id="searchAcumuladores" class="form-control w-auto" placeholder="Pesquisar acumuladores...">
+
+                    </div>
+
+                    <div class="table-responsive">
+
+                        <table class="table table-hover align-middle" id="acumuladoresTable">
+
+                            <thead class="table-dark">
+
+                                <tr>
+
+                                    <th>Código</th>
+
+                                    <th>Descrição</th>
+
+                                    <th>CFOP</th>
+
+                                    <th class="text-center">Ações</th>
+
+                                </tr>
+
+                            </thead>
+
+                            <tbody id="acumuladoresBody">
+
+                                {% for acumulador in acumuladores %}
+
+                                <tr>
+
+                                    <td class="font-tabular fw-semibold">{{ acumulador.codigo }}</td>
+
+                                    <td>{{ acumulador.descricao }}</td>
+
+                                    <td><span class="badge bg-secondary-subtle text-secondary font-tabular">{{ acumulador.cfop }}</span></td>
+
+                                    <td class="text-center">
+
+                                        <button type="button" class="btn btn-sm btn-outline-secondary edit-acumulador" data-codigo="{{ acumulador.codigo }}" title="Editar Acumulador">
+
+                                            <i class="bi bi-pencil"></i>
+
+                                        </button>
+
+                                        <button type="button" class="btn btn-sm btn-outline-danger delete-acumulador" data-codigo="{{ acumulador.codigo }}" title="Excluir Acumulador">
+
+                                            <i class="bi bi-trash"></i>
+
+                                        </button>
+
+                                    </td>
+
+                                </tr>
+
+                                {% endfor %}
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- Modal Novo/Editar Acumulador -->
+
+    <div class="modal fade" id="novoAcumuladorModal" tabindex="-1">
+
+        <div class="modal-dialog">
+
+            <div class="modal-content">
+
+                <div class="modal-header">
+
+                    <h2 class="h5 modal-title mb-0" id="acumuladorModalTitle"><i class="bi bi-plus-lg me-2"></i>Novo Acumulador</h2>
+
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+
+                </div>
+
+                <div class="modal-body">
+
+                    <form id="acumuladorForm">
+
+                        <div class="mb-3">
+
+                            <label for="acumuladorCodigo" class="form-label">Código do Acumulador</label>
+
+                            <input type="text" class="form-control" id="acumuladorCodigo" required maxlength="10">
+
+                        </div>
+
+                        <div class="mb-3">
+
+                            <label for="acumuladorDescricao" class="form-label">Descrição</label>
+
+                            <input type="text" class="form-control" id="acumuladorDescricao" required maxlength="100">
+
+                        </div>
+
+                        <div class="mb-3">
+
+                            <label for="acumuladorCfop" class="form-label">CFOP Vinculado</label>
+
+                            <select class="form-select" id="acumuladorCfop" required>
+
+                                <option value="">Selecione...</option>
+
+                                {% for cfop in cfops %}
+
+                                <option value="{{ cfop.codigo }}">{{ cfop.codigo }} - {{ cfop.descricao }}</option>
+
+                                {% endfor %}
+
+                            </select>
+
+                        </div>
+
+                    </form>
+
+                </div>
+
+                <div class="modal-footer">
+
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+
+                    <button type="submit" class="btn btn-primary" id="btnSalvarAcumulador" form="acumuladorForm">Salvar</button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- Modal CFOPs -->
+
+    <div class="modal fade" id="cfopsModal" tabindex="-1">
+
+        <div class="modal-dialog modal-lg">
+
+            <div class="modal-content">
+
+                <div class="modal-header">
+
+                    <h2 class="h5 modal-title mb-0"><i class="bi bi-gear me-2"></i>Gerenciar CFOPs</h2>
+
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+
+                </div>
+
+                <div class="modal-body">
+
+                    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+
+                        <button type="button" class="btn btn-primary" id="btnNovoCfop" data-bs-toggle="modal" data-bs-target="#novoCfopModal">
+
+                            <i class="bi bi-plus-lg me-2"></i>Novo CFOP
+
+                        </button>
+
+                        <input type="text" id="searchCfops" class="form-control w-auto" placeholder="Pesquisar CFOPs...">
+
+                    </div>
+
+                    <div class="table-responsive">
+
+                        <table class="table table-hover align-middle" id="cfopsTable">
+
+                            <thead class="table-dark">
+
+                                <tr>
+
+                                    <th>CFOP</th>
+
+                                    <th class="text-center" style="width: 140px;">Ações</th>
+
+                                </tr>
+
+                            </thead>
+
+                            <tbody id="cfopsBody">
+
+                                {% for cfop in cfops %}
+
+                                <tr>
+
+                                    <td class="font-tabular fw-semibold">{{ cfop.cfop }}</td>
+
+                                    <td class="text-center">
+
+                                        <button type="button" class="btn btn-sm btn-outline-secondary edit-cfop" data-codigo="{{ cfop.cfop }}" data-id="{{ cfop.id }}" title="Editar CFOP">
+
+                                            <i class="bi bi-pencil"></i>
+
+                                        </button>
+
+                                        <button type="button" class="btn btn-sm btn-outline-danger delete-cfop" data-codigo="{{ cfop.cfop }}" data-id="{{ cfop.id }}" title="Excluir CFOP">
+
+                                            <i class="bi bi-trash"></i>
+
+                                        </button>
+
+                                    </td>
+
+                                </tr>
+
+                                {% endfor %}
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- Modal Novo CFOP -->
+
+    <div class="modal fade" id="novoCfopModal" tabindex="-1">
+
+        <div class="modal-dialog">
+
+            <div class="modal-content">
+
+                <div class="modal-header">
+
+                    <h2 class="h5 modal-title mb-0" id="cfopModalTitle"><i class="bi bi-plus-lg me-2"></i>Novo CFOP</h2>
+
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+
+                </div>
+
+                <div class="modal-body">
+
+                    <form id="cfopForm" novalidate>
+
+                        <input type="hidden" id="cfopOriginal" value="">
+
+                        <div class="mb-3">
+
+                            <label for="cfopCodigo" class="form-label">Código CFOP</label>
+
+                            <input type="text" class="form-control font-tabular" id="cfopCodigo" required pattern="[1-7][0-9]{3}" maxlength="4" placeholder="Ex: 5102">
+
+                            <div class="invalid-feedback">CFOP inválido. Digite 4 dígitos começando com 1, 2, 3, 5, 6 ou 7.</div>
+
+                        </div>
+
+                    </form>
+
+                </div>
+
+                <div class="modal-footer">
+
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+
+                    <button type="button" class="btn btn-primary" id="saveCfopButton">Salvar</button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- Modal Inconsistências -->
+
+    <div class="modal fade" id="inconsistenciasModal" tabindex="-1">
+
+        <div class="modal-dialog modal-xl">
+
+            <div class="modal-content">
+
+                <div class="modal-header bg-warning">
+
+                    <h2 class="h5 modal-title mb-0 text-dark"><i class="bi bi-exclamation-triangle me-2"></i>Análise de Inconsistências Fiscais</h2>
+
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+
+                </div>
+
+                <div class="modal-body">
+
+                    <p class="text-muted mb-3">
+
+                        Produtos com NCM igual ou similar e descrições correspondentes (>=80%) mas associados a acumuladores diferentes.
+
+                    </p>
+
+                    <div id="inconsistenciasLoading" class="text-center py-4">
+
+                        <div class="spinner-border text-warning" role="status">
+
+                            <span class="visually-hidden">Analisando...</span>
+
+                        </div>
+
+                        <p class="mt-2 text-muted small">Cruzando banco de dados...</p>
+
+                    </div>
+
+                    <div id="inconsistenciasResultado" class="d-none">
+
+                        <div id="inconsistenciasAlerta" class="alert d-none"></div>
+
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+
+                            <span id="inconsistenciasContador" class="text-muted small fw-semibold"></span>
+
+                        </div>
+
+                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+
+                            <table class="table table-hover align-middle">
+
+                                <thead class="table-dark sticky-top">
+
+                                    <tr>
+
+                                        <th>Código</th>
+
+                                        <th>Descrição</th>
+
+                                        <th>NCM</th>
+
+                                        <th>Acumulador Atual</th>
+
+                                        <th class="text-center">Ação</th>
+
+                                    </tr>
+
+                                </thead>
+
+                                <tbody id="inconsistenciasBody"></tbody>
+
+                            </table>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- Modal Classificação Automática -->
+
+    <div class="modal fade" id="classificacaoAutoModal" tabindex="-1">
+
+        <div class="modal-dialog modal-xl">
+
+            <div class="modal-content">
+
+                <div class="modal-header bg-success text-white">
+
+                    <h2 class="h5 modal-title mb-0 text-white"><i class="bi bi-magic me-2"></i>Classificação Automática Inteligente</h2>
+
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+
+                </div>
+
+                <div class="modal-body">
+
+                    <p class="text-muted mb-3">
+
+                        Sugestões de acumuladores calculadas com algoritmo fuzzy a partir do histórico de itens já classificados.
+
+                    </p>
+
+                    <div id="classificacaoLoading" class="text-center py-4">
+
+                        <div class="spinner-border text-success" role="status">
+
+                            <span class="visually-hidden">Analisando...</span>
+
+                        </div>
+
+                        <p class="mt-2 text-muted small">Processando correspondências de produtos...</p>
+
+                    </div>
+
+                    <div id="classificacaoResultado" class="d-none">
+
+                        <div id="classificacaoAlerta" class="alert d-none"></div>
+
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+
+                            <span id="classificacaoContador" class="text-muted small fw-semibold"></span>
+
+                            <div>
+
+                                <button type="button" class="btn btn-success btn-sm" id="btnAprovarTodas">
+
+                                    <i class="bi bi-check-all me-1"></i>Aprovar Todas as Sugestões
+
+                                </button>
+
+                            </div>
+
+                        </div>
+
+                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+
+                            <table class="table table-hover align-middle">
+
+                                <thead class="table-dark sticky-top">
+
+                                    <tr>
+
+                                        <th>Código</th>
+
+                                        <th>Descrição</th>
+
+                                        <th>NCM</th>
+
+                                        <th>Acumulador Sugerido</th>
+
+                                        <th class="text-center">Ações</th>
+
+                                    </tr>
+
+                                </thead>
+
+                                <tbody id="classificacaoBody"></tbody>
+
+                            </table>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- Toast Container -->
+
+    <div class="toast-container">
+
+        <div id="toastContainer"></div>
+
+    </div>
+
+
+
+    <!-- Scripts -->
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script src="/static/js/main.js"></script>
+
+    <script>
+
+        window.empresaSelecionada = document.body.dataset.empresaSelecionada === 'true';
+
+    </script>
+
+    <script src="/static/js/sped.js"></script>
+
+    <script>
+
+        const empresaSelect = document.getElementById('empresaSelect');
+
+        const refreshEmpresas = document.getElementById('refreshEmpresas');
+
+        const empresaImportInfo = document.getElementById('empresaImportInfo');
+
+
+
+        if (empresaSelect) {
+
+            empresaSelect.addEventListener('change', async function () {
+
+                const empresaId = this.value;
+
+                try {
+
+                    const response = await fetch(`/empresas/selecionar/${empresaId || 0}`, {
+
+                        method: 'POST',
+
+                        headers: { 'Content-Type': 'application/json' },
+
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+
+                        window.location.reload();
+
+                    } else {
+
+                        showToast(data.error || 'Erro ao selecionar empresa', 'danger');
+
+                    }
+
+                } catch (error) {
+
+                    console.error('Erro ao selecionar empresa:', error);
+
+                    showToast('Erro ao conectar com o servidor', 'danger');
+
+                }
+
+            });
+
+        }
+
+
+
+        if (refreshEmpresas) {
+
+            refreshEmpresas.addEventListener('click', () => {
+
+                window.location.reload();
+
+            });
+
+        }
+
+    </script>
+
+</body>
+
+
+
+</html>
+

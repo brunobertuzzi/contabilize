@@ -1,0 +1,69 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+build/
+dist/
+*.egg-info/
+
+# Testing, Linting & Caches
+.cache/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+nosetests.xml
+coverage.xml
+
+# Environments and secrets
+venv/
+.venv/
+env/
+.env/
+.env
+.env.local
+.env.*.local
+!.env.example
+.secret_key
+*.secret
+*.pem
+*.key
+
+# SQLite Databases & runtime files
+database/*.db
+database/*.db-journal
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+database/*
+!database/.gitkeep
+
+# Runtime & temporary directories
+backups/
+logs/
+*.log
+uploads/*
+!uploads/.gitkeep
+
+# IDE & Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.sublime-*
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Node & TypeScript dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.tsbuildinfo

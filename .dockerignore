@@ -1,0 +1,40 @@
+# Controle de versão e IDEs
+.git/
+.gitignore
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Dependências e caches Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+venv/
+.venv/
+
+# Dependências e caches Frontend
+node_modules/
+.npm/
+npm-debug.log*
+.tsbuildinfo
+
+# Bancos de dados SQLite locais e runtime
+database/*.db
+database/*.db-journal
+*.sqlite
+*.sqlite3
+backups/
+logs/
+uploads/*
+!uploads/.gitkeep
+
+# Chaves e segredos locais
+.env
+.secret_key
+*.key
+*.pem

@@ -1,0 +1,67 @@
+<!-- Topbar Component (Framed Sheet L-Frame) -->
+<header class="topbar">
+    <div class="d-flex align-items-center gap-3">
+        <!-- Mobile Toggle -->
+        <button class="btn btn-sm d-md-none p-1 text-muted" id="mobileSidebarToggle" type="button" aria-label="Abrir menu">
+            <i class="bi bi-list fs-5"></i>
+        </button>
+
+        <!-- Breadcrumb -->
+        <nav class="topbar-breadcrumb" aria-label="Navegação estrutural">
+            <span>Contabilize</span>
+            <span>/</span>
+            <span class="crumb-page">
+                {% if active_page == 'index' %}Visão Geral
+                {% elif active_page == 'sped' %}SPED Workbench
+                {% elif active_page == 'settings' %}Configurações
+                {% elif active_page == 'about' %}Sobre o Sistema
+                {% else %}{{ active_page|title }}{% endif %}
+            </span>
+        </nav>
+    </div>
+
+    <div class="d-flex align-items-center gap-3">
+        <!-- Company Scope Pill -->
+        {% if session.get('empresa_razao_social') %}
+        <div class="topbar-company-pill d-none d-sm-flex align-items-center gap-2">
+            <span class="pill-dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--positive);"></span>
+            <span class="fw-medium text-truncate" style="max-width: 200px;" title="{{ session.get('empresa_razao_social') }}">
+                {{ session.get('empresa_razao_social') }}
+            </span>
+            {% if session.get('empresa_cnpj') %}
+            <span class="cnpj-code">({{ session.get('empresa_cnpj') }})</span>
+            {% endif %}
+            <a href="/sped/" class="text-muted ms-1" title="Alterar empresa ativa">
+                <i class="bi bi-arrow-repeat"></i>
+            </a>
+        </div>
+        {% else %}
+        <div class="topbar-company-pill d-none d-sm-flex align-items-center gap-2">
+            <span class="pill-dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--muted);"></span>
+            <span class="text-muted">Todas as empresas</span>
+            <a href="/sped/" class="text-primary ms-1 fw-medium" title="Selecionar empresa">Selecionar</a>
+        </div>
+        {% endif %}
+
+        <!-- User Profile Dropdown -->
+        {% if current_user.is_authenticated %}
+        <div class="dropdown">
+            <button class="btn btn-sm p-1 d-flex align-items-center gap-2 border-0 bg-transparent dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <span class="sidebar-avatar">{{ current_user.username[0]|upper }}</span>
+                <span class="d-none d-md-inline fw-medium" style="font-size: 13px !important;">{{ current_user.username }}</span>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm border mt-1">
+                <li class="px-3 py-1 text-muted" style="font-size: 12px;">
+                    CONECTADO COMO
+                    <div class="fw-bold text-dark" style="font-size: 14px;">{{ current_user.username }}</div>
+                </li>
+                <li><hr class="dropdown-divider my-1"></li>
+                <li><a class="dropdown-item small" href="/settings"><i class="bi bi-sliders me-2"></i>Configurações</a></li>
+                <li><a class="dropdown-item small" href="/about"><i class="bi bi-info-circle me-2"></i>Sobre</a></li>
+                <li><hr class="dropdown-divider my-1"></li>
+                <li><a class="dropdown-item small text-danger" href="/logout"><i class="bi bi-box-arrow-right me-2"></i>Sair</a></li>
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</header>

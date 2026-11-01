@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visão Geral - Contabilize Fiscal</title>
+    <!-- Bootstrap CSS for grid & modal utilities -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <!-- Dealt Fonts: IBM Plex Sans & IBM Plex Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Custom CSS Framed Sheet -->
+    <link rel="stylesheet" href="/static/css/main.css">
+</head>
+
+<body>
+    <div class="app-frame">
+        <!-- Sidebar Navigation (Tinted Frame) -->
+        {% include 'sidebar.html' %}
+
+        <!-- Main Workspace Wrapper -->
+        <div class="main-wrapper">
+            <!-- 48px Topbar (Shared ground with sidebar) -->
+            {% include 'topbar.html' %}
+
+            <!-- White Sheet Canvas -->
+            <main class="main-content" id="mainContent">
+                <!-- View Header -->
+                <header class="view-header">
+                    <div>
+                        <h1 class="view-header-title">Visão Geral Fiscal</h1>
+                        <p class="view-header-sub">Auditoria de arquivos SPED Fiscal ICMS/IPI, conciliação e acumuladores contábeis.</p>
+                    </div>
+                    <div class="view-header-actions">
+                        <a href="/sped/" class="btn-app btn-app-primary">
+                            <i class="bi bi-terminal" aria-hidden="true"></i>
+                            <span>Abrir SPED Workbench</span>
+                        </a>
+                        <a href="/settings" class="btn-app">
+                            <i class="bi bi-sliders" aria-hidden="true"></i>
+                            <span>Configurações</span>
+                        </a>
+                    </div>
+                </header>
+
+                <!-- Screen's One Finding (House Rule: The fact that most needs attention) -->
+                {% if stats.produtos_sem_acumulador > 0 %}
+                <div class="d-flex align-items-center justify-content-between p-3 mb-4 rounded-2" style="background: var(--pill-warning-bg); border: 1px solid var(--warning);">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="pill-dot" style="width: 8px; height: 8px; border-radius: 50%; background: var(--warning);"></span>
+                        <span style="font-size: 13px; font-weight: 500; color: var(--pill-warning-ink);">
+                            Atenção fiscal: {{ stats.produtos_sem_acumulador }} produto(s) escriturado(s) sem acumulador contábil vinculado.
+                        </span>
+                    </div>
+                    <a href="/sped/" class="btn-app btn-app-sm btn-app-primary">Classificar no Workbench →</a>
+                </div>
+                {% else %}
+                <div class="d-flex align-items-center gap-2 p-3 mb-4 rounded-2" style="background: var(--pill-positive-bg); border: 1px solid var(--positive);">
+                    <span class="pill-dot" style="width: 8px; height: 8px; border-radius: 50%; background: var(--positive);"></span>
+                    <span style="font-size: 13px; font-weight: 500; color: var(--pill-positive-ink);">
+                        Conformidade contábil: todos os produtos escriturados estão devidamente vinculados a acumuladores.
+                    </span>
+                </div>
+                {% endif %}
+
+                <!-- KPIs: Type, not tiles (No icon chips, no colored circles, tabular numerals) -->
+                <section class="kpi-row" aria-label="Indicadores contábeis">
+                    <div class="kpi-card">
+                        <div class="kpi-label">Empresas Habilitadas</div>
+                        <div class="kpi-value">{{ stats.total_empresas or 0 }}</div>
+                        <div class="kpi-meta text-truncate">
+                            {% if session.get('empresa_razao_social') %}
+                            Ativa: {{ session.get('empresa_razao_social') }}
+                            {% else %}
+                            Todas as empresas no escopo
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="kpi-card">
+                        <div class="kpi-label">Documentos Escriturados</div>
+                        <div class="kpi-value">{{ stats.total_documentos or 0 }}</div>
+                        <div class="kpi-meta">Notas fiscais de entrada e saída</div>
+                    </div>
+
+                    <div class="kpi-card">
+                        <div class="kpi-label">Produtos Registrados</div>
+                        <div class="kpi-value">{{ stats.total_produtos or 0 }}</div>
+                        <div class="kpi-meta">
+                            {% if stats.produtos_sem_acumulador > 0 %}
+                            <span class="text-danger fw-medium">{{ stats.produtos_sem_acumulador }} sem acumulador</span>
+                            {% else %}
+                            100% dos itens cadastrados
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="kpi-card">
+                        <div class="kpi-label">Taxa de Conciliação</div>
+                        <div class="kpi-value">{{ stats.taxa_conciliacao or 100.0 }}%</div>
+                        <div class="kpi-progress">
+                            <div class="kpi-progress-bar" id="kpiTaxaProgressBar" data-progress="{{ stats.taxa_conciliacao or 100.0 }}"></div>
+                            <script>document.getElementById('kpiTaxaProgressBar').style.width = '{{ stats.taxa_conciliacao or 100.0 }}%';</script>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Two-Column Operational Layout -->
+                <div class="row g-4">
+                    <!-- Column 1: Competências & Histórico de Processamento -->
+                    <div class="col-lg-8">
+                        <div class="panel-flush">
+                            <div class="panel-header">
+                                <div>
+                                    <h2 class="panel-title">Competências Fiscais Recentes</h2>
+                                    <p class="panel-subtitle">Histórico consolidado de apurações e faturamento por competência SPED.</p>
+                                </div>
+                                <a href="/sped/" class="btn-app btn-app-sm">Ver Todas</a>
+                            </div>
+
+                            <div class="table-wrap">
+                                <table class="fiscal-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Competência</th>
+                                            <th class="num">Qtd Vendas</th>
+                                            <th class="num">Faturamento Total</th>
+                                            <th>Status</th>
+                                            <th>Ação</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% if stats.competencias_recentes %}
+                                        {% for comp in stats.competencias_recentes %}
+                                        <tr>
+                                            <td class="fw-medium mono-num">{{ comp.competencia }}</td>
+                                            <td class="num">{{ comp.qtd_vendas }}</td>
+                                            <td class="num">R$ {{ "{:,.2f}".format(comp.total_faturado).replace(",", "X").replace(".", ",").replace("X", ".") }}</td>
+                                            <td>
+                                                <span class="pill pill-positive">
+                                                    <span class="pill-dot"></span>
+                                                    Escriturado
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <a href="/sped/" class="btn-app btn-app-sm">Workbench →</a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                        {% else %}
+                                        <tr>
+                                            <td colspan="5" class="text-center py-4 text-muted">
+                                                Nenhum arquivo SPED processado ainda para esta empresa.
+                                                <div class="mt-2">
+                                                    <a href="/sped/" class="btn-app btn-app-sm btn-app-primary">Importar Arquivo SPED</a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endif %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Direct Inline Ingestion Station -->
+                        <div class="panel-flush">
+                            <div class="panel-header">
+                                <div>
+                                    <h2 class="panel-title">Ingestão de Arquivo SPED Fiscal</h2>
+                                    <p class="panel-subtitle">Carregue arquivos .txt de escrituração fiscal digital para processamento imediato.</p>
+                                </div>
+                            </div>
+                            <a href="/sped/" class="inline-dropzone text-decoration-none" title="Ir para upload de SPED">
+                                <div class="dropzone-label">
+                                    <i class="bi bi-cloud-arrow-up dropzone-icon" aria-hidden="true"></i>
+                                    <div>
+                                        <div class="dropzone-title">Carregar nova escrituração EFD ICMS/IPI</div>
+                                        <div class="dropzone-hint">Clique para abrir o módulo de importação com validação de blocos 0200, C100 e C170.</div>
+                                    </div>
+                                </div>
+                                <span class="btn-app btn-app-primary">Acessar Importador</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Column 2: Ações & Auditoria do Sistema -->
+                    <div class="col-lg-4">
+                        <div class="panel-flush">
+                            <div class="panel-header">
+                                <h2 class="panel-title">Ações do Workbench</h2>
+                            </div>
+                            <div class="d-flex flex-column gap-2">
+                                <a href="/sped/" class="btn-app justify-content-between py-2 text-decoration-none" style="height: auto;">
+                                    <div class="text-start">
+                                        <div class="fw-semibold" style="font-size: 13px;">Catálogo de Produtos</div>
+                                        <div class="text-muted" style="font-size: 12px;">Mapeamento de acumuladores e NCMs</div>
+                                    </div>
+                                    <i class="bi bi-arrow-right text-muted"></i>
+                                </a>
+
+                                <a href="/sped/" class="btn-app justify-content-between py-2 text-decoration-none" style="height: auto;">
+                                    <div class="text-start">
+                                        <div class="fw-semibold" style="font-size: 13px;">Relatório de Vendas</div>
+                                        <div class="text-muted" style="font-size: 12px;">Totais de faturamento por período</div>
+                                    </div>
+                                    <i class="bi bi-arrow-right text-muted"></i>
+                                </a>
+
+                                <a href="/settings" class="btn-app justify-content-between py-2 text-decoration-none" style="height: auto;">
+                                    <div class="text-start">
+                                        <div class="fw-semibold" style="font-size: 13px;">Controle de Acessos</div>
+                                        <div class="text-muted" style="font-size: 12px;">Usuários, permissões e cópias de segurança</div>
+                                    </div>
+                                    <i class="bi bi-arrow-right text-muted"></i>
+                                </a>
+                            </div>
+                        </div>
+
+
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1100;"></div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/main.js"></script>
+</body>
+
+</html>

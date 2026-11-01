@@ -1,0 +1,16 @@
+{
+  "name": "contabilize",
+  "version": "1.0.0",
+  "description": "Interface e módulos TypeScript para o sistema Contabilize SPED Fiscal",
+  "private": true,
+  "scripts": {
+    "build": "tsc --noEmit && node build.js",
+    "build:fast": "node build.js",
+    "type-check": "tsc --noEmit",
+    "watch": "node build.js --watch"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "typescript": "^7.0.2"
+  }
+}
